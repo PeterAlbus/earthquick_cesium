@@ -8,6 +8,7 @@
         :fullscreenButton="fullscreenButton"
         :fullscreenElement="fullscreenElement"
         :infoBox="infoBox"
+        :selectionIndicator="false"
         :showCredit="showCredit"
         @cesiumReady="onCesiumReady"
         @ready="onViewerReady"
@@ -38,6 +39,7 @@
         <vc-entity
             :position="[item.longitude,item.latitude, 0]"
             :description="'震源位置:'+item.latitude+','+item.longitude+',震级:'+item.magnitude"
+            :id="item.earthquakeId.toString()"
             v-for="item in earthquakeInfoList"
         >
           <vc-graphics-point ref="point1" color="red" :pixelSize="2*item.magnitude"></vc-graphics-point>
@@ -77,6 +79,7 @@
       <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="10">
         <vc-provider-imagery-tianditu :mapStyle="mapStyle" token="125c8a9d540afbc15a4feb04d9c2e8ef" ref="provider"></vc-provider-imagery-tianditu>
       </vc-layer-imagery>
+
 <!--      <vc-primitive-tileset-->
 <!--          ref="primitive"-->
 <!--          url="/tileset/tileset.json"-->
@@ -155,7 +158,7 @@
                 <i class="el-icon-timer"></i>
                 地震发生时间
               </template>
-              {{ item.time }}
+              {{ item.earthquakeTime }}
             </el-descriptions-item>
           </el-descriptions>
         </div >
@@ -211,7 +214,7 @@
               <i class="el-icon-office-building"></i>
               地震发生时间
             </template>
-            {{ earthquakeInfoList[selectedEarthquakeIndex].time }}
+            {{ earthquakeInfoList[selectedEarthquakeIndex].earthquakeTime }}
           </el-descriptions-item>
         </el-descriptions>
       </el-dialog>
@@ -236,7 +239,7 @@
           </el-form-item>
           <el-form-item label="地震发生时间">
             <el-date-picker
-                v-model="form.time"
+                v-model="form.earthquakeTime"
                 type="datetime"
                 placeholder="选择地震发生时间"
                 value-format="YYYY-MM-DD HH:mm:ss"
@@ -349,7 +352,7 @@ export default {
         magnitude: '',
         longitude: '',
         latitude: '',
-        time: '',
+        earthquakeTime: '',
       },
       //earthquakeInfo
       earthquakeInfoList:[{
@@ -359,7 +362,7 @@ export default {
         highIntensity:7,
         longitude:25.727,
         latitude:100.008,
-        time:'2021-12-02 10:24:07',
+        earthquakeTime:'2021-12-02 10:24:07',
         intensityLineList:[{
           lindId:1,
           longRadius:11.143207166465402,
@@ -418,6 +421,9 @@ export default {
     this.$refs.vcViewer.createPromise.then(({ Cesium, viewer }) => {
       console.log('viewer is loaded.')
       viewer.scene.globe.depthTestAgainstTerrain = false;
+      let iframe = document.getElementsByClassName('cesium-infoBox-iframe')[0]
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms')
+      iframe.setAttribute('src', '')
       // let handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
       // let that=this;
       // handler.setInputAction(function (event) {

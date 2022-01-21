@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import VueCesium from 'vue-cesium'
-import 'vue-cesium/lib/theme-default/index.css'
+import 'vue-cesium/dist/index.css'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue'
@@ -10,7 +10,7 @@ import VueAxios from 'vue-axios'
 import qs from 'qs'
 
 axios.defaults.withCredentials=false;
-axios.defaults.baseURL='http://localhost:8080/'
+axios.defaults.baseURL='https://www.peteralbus.com:8087/'
 
 const app = createApp(App)
 app.config.globalProperties.$axios=axios;

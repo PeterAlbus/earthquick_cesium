@@ -13,7 +13,7 @@
     "qs": "^6.10.1",
     "vue": "^3.0.0",
     "vue-axios": "^3.4.0",
-    "vue-cesium": "^3.0.1-beta.14",
+    "vue-cesium": "^3.0.6",
     "vue-router": "^4.0.0-0"
   },
   "devDependencies": {
