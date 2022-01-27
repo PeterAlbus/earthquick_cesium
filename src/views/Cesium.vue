@@ -122,15 +122,6 @@
           title="选择地震"
           width="50%"
       >
-      <el-button
-        type="primary"
-        icon="el-icon-search"
-        round
-        @click="earthquakeSelectVisible = true"
-        class="toolbar-item"
-        >地震列表</el-button
-      >
-      <el-dialog v-model="earthquakeSelectVisible" title="选择地震" width="50%">
         <el-input v-model="searchEarthquake" placeholder="输入地震名称搜索" />
         <div class="el-dialog-div">
           <el-descriptions
@@ -1141,7 +1132,13 @@ export default {
   width:100%;
   height:100vh;
 }
-
+.circle {
+  border-radius: 50%;
+  width: 62.5px;
+  height: 62.5px;
+  background: var(--color);
+  /* 宽度和高度需要相等 */
+}
 ::-webkit-scrollbar {
   width: 6px;
   background-color: #F5F5F5;
