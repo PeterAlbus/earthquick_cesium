@@ -164,18 +164,13 @@
         </div >
       </el-dialog>
 <!--https://restapi.amap.com/v3/geocode/regeo?output=json&location=100.008,25.727&key=e21feddaeef263e2506376a2ddbb994e&radius=1000&extensions=all-->
-      <el-button type="danger" round @click="getEarthquakeSituation" class="toolbar-item" icon="el-icon-document">评估地震情况</el-button>
+      <el-button type="danger" @click="getEarthquakeSituation" round class="toolbar-item" icon="el-icon-document">评估地震情况</el-button>
       <el-dialog
           v-model="dialogVisible"
           title="地震灾情快速评估"
-          width="30%"
+          width="65vw"
+          center
       >
-        <p>
-          <span>预估经济损失:{{ predict.predictEconomy }}亿元</span>
-        </p>
-        <p>
-          <span>预估死亡人数:{{ predict.predictDeath }}人</span>
-        </p>
         <el-descriptions
             :title="earthquakeInfoList[selectedEarthquakeIndex].earthquakeName"
             :column="2"
@@ -217,6 +212,25 @@
             {{ earthquakeInfoList[selectedEarthquakeIndex].earthquakeTime }}
           </el-descriptions-item>
         </el-descriptions>
+        <br/>
+<!--        <div style="height: 40vh;width: 55vw">-->
+<!--          <div ref="bar" style="height:40vh;width:27.5vw;float: left"></div>-->
+<!--          <div ref="bar1" style="height:40vh;width:27.5vw;float: right"></div>-->
+<!--        </div>-->
+        <div style="height: 30vh">
+          <div style="float: left;">
+              <div :style="{'--color': deathColor}" style="float: left" class="circle"/>
+              <p style="font-size: large" >&nbsp预估经济损失:{{ estimate.predictEconomy }}亿元</p>
+            <br/>
+            <div><img src="../assets/predictdeath.png"></div>
+          </div>
+          <div style="float: right;">
+            <div :style="{'--color': ecoColor}" style="float:left;" class="circle"/>
+              <p style="font-size: large">&nbsp预估死亡人数:{{ estimate.predictDeath }}人</p>
+            <br/>
+            <div><img src="../assets/predictdeath.png"></div>
+          </div>
+        </div>
       </el-dialog>
       <el-button type="success" round @click="addEarthquakeVisible=true" class="toolbar-item" icon="el-icon-plus">添加地震</el-button>
       <el-dialog
@@ -258,7 +272,7 @@
 
 <script>
 import {getCurrentInstance, reactive, ref, onMounted } from "vue";
-
+import echarts from "echarts";
 export default {
   name: "Cesium",
   setup() {
@@ -372,10 +386,13 @@ export default {
           earthquakeId:1
         }]
       }],
-      predict:{
-        predictDeath:0,
-        predictEconomy:0
+      estimate:{
+        predictDeath:'',
+        predictEconomy:'',
+        population:'',
       },
+      deathColor: '#00B14E',
+      ecoColor: '#00B14E',
       selectedEarthquakeIndex:0,
       //mesure
       measurementFabOptions1: {
@@ -459,14 +476,52 @@ export default {
     },
     getEarthquakeSituation(){
       let that=this;
-      that.$axios.get('earthquakeInfo/getDeathPredict?earthquakeId='+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId)
+      that.$axios.get('estimate/getAnalyzeResult?earthquakeId='+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId)
       .then(res=>{
-        that.predict.predictDeath=res.data;
-        that.$axios.get('earthquakeInfo/getEconomyPredict?earthquakeId='+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId)
-        .then(res=>{
-          that.predict.predictEconomy=res.data;
+        let temp_analyze = res.data;
+        let temp_predictDeath= temp_analyze.predictDeath;
+        let temp_predictEconomy = temp_analyze.predictEconomy;
+        if(temp_predictDeath <= 1){
+          that.estimate.predictDeath = '0-1';
+          that.deathColor = '#00B14E'
+        }
+        else if(temp_predictDeath <= 10){
+          that.estimate.predictDeath = '1-10';
+          that.deathColor = '#FFFF00'
+        }
+        else if(temp_predictDeath <= 100){
+          that.estimate.predictDeath = '10-100';
+          that.deathColor = '#FFFF00'
+        }
+        else if(temp_predictDeath <= 1000){
+          that.estimate.predictDeath = '100-1000';
+          that.deathColor = '#FF9900'
+        }
+        else {
+          that.estimate.predictDeath = '大于1000';
+          that.deathColor = '#FF0000'
+        }
+          if(temp_predictEconomy <= 1){
+            that.estimate.predictEconomy = temp_predictEconomy;
+            that.ecoColor = '#00B14E'
+          }
+          else if(temp_predictEconomy <= 10){
+            that.estimate.predictEconomy = temp_predictEconomy;
+            that.ecoColor = '#FFFF00'
+          }
+          else if(temp_predictEconomy <= 100){
+            that.estimate.predictEconomy = temp_predictEconomy;
+            that.ecoColor = '#FFFF00'
+          }
+          else if(temp_predictEconomy <= 1000){
+            that.estimate.predictEconomy = temp_predictEconomy;
+            that.ecoColor = '#FF9900'
+          }
+          else {
+            that.estimate.predictEconomy = temp_predictEconomy;
+            that.ecoColor = '#FF0000'
+          }
           that.dialogVisible = true;
-        })
       })
     },
     selectEarthquakeIndex(index){
@@ -579,6 +634,63 @@ export default {
     //   console.log('onLeftClick',e)
     //
     // }
+    open() {
+      this.$nextTick(() => {
+        this.draw()
+      })
+    },
+    draw(){
+      let echarts = require('echarts')
+      let myEcharts = echarts.init(this.$refs.bar)
+      let option = {
+        title: {
+          text: '灾区人口密度以及GDP'
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          }
+        },
+        xAxis: {
+          type: 'category',
+          data: ['2022年1月']
+        },
+        yAxis: [
+          {
+          name: '人口密度(人/km²)',
+          position: 'left',
+            data: ['oo','0-1','1-10','10-100','100+'],
+            axisTick:{ show:false }
+        },
+          {
+            name: 'GDP(亿元)',
+            position: 'right',
+            data: ['oo','0-1','1-10','10-100','100+']
+          }],
+        series: [
+          {
+            name: '人口密度',
+            data: [this.predict.predictDeath],
+            yAxisIndex: 0,
+            type: 'bar',
+            // showBackground: true,
+            // backgroundStyle: {
+            //   color: 'rgba(220, 220, 220, 0.8)'
+            // }
+          },
+          {
+            name: 'GDP',
+            type: 'bar',
+            smooth: true,
+            yAxisIndex: 1,
+            data: [20]
+          }
+        ]
+      };
+      myEcharts.setOption(option)
+    },
+
   },
   computed:{
     earthquakeSearchResult: function(){
@@ -627,7 +739,13 @@ export default {
   width:100%;
   height:100vh;
 }
-
+.circle {
+  border-radius: 50%;
+  width: 62.5px;
+  height: 62.5px;
+  background: var(--color);
+  /* 宽度和高度需要相等 */
+}
 ::-webkit-scrollbar {
   width: 6px;
   background-color: #F5F5F5;
