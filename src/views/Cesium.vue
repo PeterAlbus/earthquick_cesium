@@ -92,7 +92,7 @@
       <!-- hyc：增加图标位置 -->
       <vc-collection-primitive
         @click="onClicked"
-        :show="show"
+        :show="showHospital"
         ref="collectionRef"
       >
         <vc-collection-billboard
@@ -111,6 +111,7 @@
         <el-checkbox v-model="showGeojson" label="geojson"></el-checkbox><br/>
         <el-checkbox v-model="showIntensity" label="烈度图"></el-checkbox><br/>
         <el-checkbox v-model="showEpicenter" label="震源"></el-checkbox>
+        <el-checkbox v-model="showHospital" label="显示医院"></el-checkbox>
       </el-popover>
       <el-button type="primary" round
                  v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,80000)"
@@ -171,7 +172,7 @@
               {{ item.earthquakeTime }}
             </el-descriptions-item>
           </el-descriptions>
-        </div >
+        </div>
       </el-dialog>
 <!--https://restapi.amap.com/v3/geocode/regeo?output=json&location=100.008,25.727&key=e21feddaeef263e2506376a2ddbb994e&radius=1000&extensions=all-->
       <el-button type="danger" @click="getEarthquakeSituation" round class="toolbar-item" icon="el-icon-document">评估地震情况</el-button>
@@ -282,16 +283,7 @@
         round
         @click="getPositionRoad"
         class="toolbar-item"
-        >开始路径规划</el-button
-      >
-      <!-- hyc:增加显示/隐藏按钮 -->
-      <el-switch
-        class="toolbar-item"
-        v-model="show"
-        active-color="#13ce66"
-        inactive-text="显示/隐藏"
-      >
-      </el-switch>
+        >开始路径规划</el-button>
     </el-row>
   </el-row>
 </template>
@@ -305,7 +297,7 @@ export default {
     // hyc:数据初始化
     const collectionRef = ref(null);
     const billboards1 = ref([]);
-    const show = ref(true);
+    const showHospital = ref(false);
     const dialogVisible = ref(false);
     const earthquakeSelectVisible = ref(false);
     const addEarthquakeVisible = ref(false);
@@ -390,7 +382,7 @@ export default {
       // hyc
       collectionRef,
       billboards1,
-      show,
+      showHospital,
     };
   },
   data() {
