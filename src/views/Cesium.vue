@@ -585,13 +585,14 @@ export default {
         }
       })
     },
-    getPosition(viewer,event){
+    getPosition(viewer, event) {
       let position = viewer.scene.pickPosition(event.position);
       let cartographic = Cesium.Cartographic.fromCartesian(position);
-      let longitude = Cesium.Math.toDegrees(cartographic.longitude); //经度
-      let latitude = Cesium.Math.toDegrees(cartographic.latitude); //纬度
-      let height = cartographic.height; //高度
-      console.log("经纬度："+longitude,latitude,height);
+      this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
+      this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
+      this.heiTemp = cartographic.height; //高度
+      this.num += 1;
+      console.log("经纬度：" + this.longTemp, this.latiTemp, this.heiTemp);
     },
     switchShow(){
       this.showIntensity=!this.showIntensity
