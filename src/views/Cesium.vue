@@ -782,6 +782,7 @@ export default {
       var latitude = Cesium.Math.toDegrees(cartographic.latitude); //纬度
       var height = cartographic.height; //高度
     */
+      console.log("现在点击的坐标经纬度以及高度为:",this.longTemp,this.latiTemp,this.heiTemp,"以及现在num的值为",this.num)
       var longitude = this.longTemp;
       var latitude = this.latiTemp;
       var height = this.heiTemp;
@@ -1068,8 +1069,8 @@ export default {
         position: property,
         orientation: new Cesium.VelocityOrientationProperty(property),
         model: {
-          uri: "/taxi.glb",
-          scale: 30,
+          uri: "/GroundVehicle.glb",
+          scale: 5,
         },
       });
       window.earth.clock.currentTime = startTime;
