@@ -1,4 +1,50 @@
 <template>
+  <div class="detail-box" v-if="showDetail">
+    <el-descriptions
+        :title="earthquakeInfoList[quickEarthquakeIndex].earthquakeName"
+        :column="2"
+        border
+    >
+      <template #extra>
+        <el-button type="primary" @click="selectedEarthquakeIndex=quickEarthquakeIndex">选择</el-button>
+      </template>
+      <el-descriptions-item>
+        <template #label>
+          <i class="el-icon-user"></i>
+          地震名称
+        </template>
+        {{ earthquakeInfoList[quickEarthquakeIndex].earthquakeName }}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <i class="el-icon-s-data"></i>
+          震级
+        </template>
+        {{earthquakeInfoList[quickEarthquakeIndex].magnitude}}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <i class="el-icon-location-outline"></i>
+          震源经纬度
+        </template>
+        ({{ earthquakeInfoList[quickEarthquakeIndex].longitude }},{{earthquakeInfoList[quickEarthquakeIndex].latitude}})
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <i class="el-icon-tickets"></i>
+          最高烈度
+        </template>
+        {{earthquakeInfoList[quickEarthquakeIndex].highIntensity}}
+      </el-descriptions-item>
+      <el-descriptions-item>
+        <template #label>
+          <i class="el-icon-office-building"></i>
+          地震发生时间
+        </template>
+        {{ earthquakeInfoList[quickEarthquakeIndex].earthquakeTime }}
+      </el-descriptions-item>
+    </el-descriptions>
+  </div>
   <el-row ref="viewerContainer" class="demo-viewer">
     <vc-viewer
         ref="vcViewer"
@@ -38,9 +84,9 @@
       <vc-datasource-custom name="epicenter" :entities="entities" @click="onClicked" :show="showEpicenter">
         <vc-entity
             :position="[item.longitude,item.latitude, 0]"
-            :description="'震源位置:'+item.latitude+','+item.longitude+',震级:'+item.magnitude"
-            :id="item.earthquakeId.toString()"
-            v-for="item in earthquakeInfoList"
+            description="epicenter"
+            :id="index.toString()"
+            v-for="(item,index) in earthquakeInfoList"
         >
           <vc-graphics-point ref="point1" color="red" :pixelSize="2*item.magnitude"></vc-graphics-point>
         </vc-entity>
@@ -122,6 +168,7 @@
           v-model="earthquakeSelectVisible"
           title="选择地震"
           width="50%"
+          style="z-index: 9999"
       >
         <el-input v-model="searchEarthquake" placeholder="输入地震名称搜索" />
         <div class="el-dialog-div">
@@ -180,6 +227,7 @@
           v-model="dialogVisible"
           title="地震灾情快速评估"
           width="65vw"
+          style="z-index: 9999"
           center
       >
         <el-descriptions
@@ -248,6 +296,7 @@
           v-model="addEarthquakeVisible"
           title="添加地震"
           width="50%"
+          style="z-index: 9999"
       >
         <el-form ref="form" :model="form" label-width="120px">
           <el-form-item label="地震名称">
@@ -346,7 +395,6 @@ export default {
     const entities = reactive([])
 
     const onClicked = e => {
-
     }
     const onDatasourceReady = ({ Cesium, viewer, cesiumObject }) => {
 
@@ -387,6 +435,7 @@ export default {
   },
   data() {
     return {
+      showDetail: false,
       form: {
         earthquakeName: '',
         magnitude: '',
@@ -420,6 +469,7 @@ export default {
       deathColor: '#00B14E',
       ecoColor: '#00B14E',
       selectedEarthquakeIndex:0,
+      quickEarthquakeIndex:0,
       //mesure
       measurementFabOptions1: {
         direction: 'right'
@@ -665,6 +715,23 @@ export default {
     },
     pickEvt(e){
       console.log('pickEvt',e)
+      try{
+        let des=e.cesiumObject.description
+        let index=0
+        if(des._value==='epicenter')
+        {
+          index=parseInt(e.id)
+          this.showDetail=true
+          this.quickEarthquakeIndex=index
+        }
+        else
+        {
+          this.showDetail=false
+        }
+      }
+      catch (err) {
+        this.showDetail=false
+      }
     },
     onViewerReady({ Cesium, viewer }) {
       this.loading = false;
@@ -1101,6 +1168,18 @@ export default {
 </script>
 
 <style scoped>
+.detail-box{
+  position: absolute;
+  bottom: 10%;
+  right: 30px;
+  color: #fff!important;
+  background-color: #ffffff;
+  min-width: 100px;
+  z-index: 999;
+
+  box-shadow: 3px 3px 3px 3px #333333;
+}
+
 .el-dialog-div{
   height: 50vh;
   overflow: auto;
