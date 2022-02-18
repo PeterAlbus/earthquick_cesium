@@ -120,10 +120,10 @@
       </vc-datasource-custom>
 <!--      <vc-provider-terrain-tianditu token="125c8a9d540afbc15a4feb04d9c2e8ef"></vc-provider-terrain-tianditu>-->
       <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="20">
-        <vc-provider-imagery-tianditu mapStyle="cva_w" token="125c8a9d540afbc15a4feb04d9c2e8ef"></vc-provider-imagery-tianditu>
+        <vc-provider-imagery-tianditu mapStyle="cva_w" token="fb9aa5004fb3881361611a709aff4c59"></vc-provider-imagery-tianditu>
       </vc-layer-imagery>
       <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="10">
-        <vc-provider-imagery-tianditu :mapStyle="mapStyle" token="125c8a9d540afbc15a4feb04d9c2e8ef" ref="provider"></vc-provider-imagery-tianditu>
+        <vc-provider-imagery-tianditu :mapStyle="mapStyle" token="fb9aa5004fb3881361611a709aff4c59" ref="provider"></vc-provider-imagery-tianditu>
       </vc-layer-imagery>
 
 <!--      <vc-primitive-tileset-->
@@ -145,6 +145,22 @@
           :billboards="billboards1"
         ></vc-collection-billboard>
       </vc-collection-primitive>
+      <!--        hyc：增加椭圆显示位置-->
+      <vc-entity ref="entityCircleOnClick" :position="[longTemp, latiTemp]" description="您所点击的位置所表示的区域">
+        <vc-graphics-ellipse :semiMinorAxis="50.0" :semiMajorAxis="50.0" :material="[255, 0, 0, 125]"></vc-graphics-ellipse>
+      </vc-entity>
+      <!--hyc:消防队位置-->
+      <vc-collection-primitive
+          @click="onClicked"
+          :show="showFireCenter"
+          ref="collectionRef"
+      >
+        <vc-collection-billboard
+            :billboards="billboardsFireCenter"
+        ></vc-collection-billboard>
+        <vc-collection-label @click="onClicked" ref="collectionRef" :labels="fireWeight" @mouseout="onMouseout" @mouseover="onMouseover">
+        </vc-collection-label>
+      </vc-collection-primitive>
     </vc-viewer>
     <el-row class="demo-toolbar">
       <el-select v-model="mapStyle" placeholder="请选择" class="toolbar-item">
@@ -158,6 +174,7 @@
         <el-checkbox v-model="showIntensity" label="烈度图"></el-checkbox><br/>
         <el-checkbox v-model="showEpicenter" label="震源"></el-checkbox>
         <el-checkbox v-model="showHospital" label="显示医院"></el-checkbox>
+        <el-checkbox v-model="showFireCenter" label="显示救援物资分配"></el-checkbox>
       </el-popover>
       <el-button type="primary" round
                  v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,80000)"
@@ -346,10 +363,13 @@ export default {
     // hyc:数据初始化
     const collectionRef = ref(null);
     const billboards1 = ref([]);
+    const billboardsFireCenter=ref([]);
     const showHospital = ref(false);
+    const showFireCenter=ref(false);
     const dialogVisible = ref(false);
     const earthquakeSelectVisible = ref(false);
     const addEarthquakeVisible = ref(false);
+    const entityCircleOnClick = ref(null)
     // state
     const instance = getCurrentInstance()
     const provider = ref(null)
@@ -409,6 +429,25 @@ export default {
       provider.value.load()
     }
 
+    const onMouseover = e => {
+      console.log(e)
+      if (e.cesiumObject instanceof Cesium.Label) {
+        this.scale = 1.5 // or e.cesiumObject.scale = 1.5
+        e.pickedFeature.primitive.scale = 1.5
+      } else if (e.cesiumObject instanceof Cesium.LabelCollection) {
+        e.pickedFeature.primitive.scale = 1.5
+      }
+    }
+
+    const onMouseout = e => {
+      console.log(e)
+      if (e.cesiumObject instanceof Cesium.Label) {
+        this.scale = 1 // or e.cesiumObject.scale = 1
+      } else if (e.cesiumObject instanceof Cesium.LabelCollection) {
+        e.pickedFeature.primitive.scale = 1
+      }
+    }
+
 
     return {
       provider,
@@ -430,11 +469,17 @@ export default {
       // hyc
       collectionRef,
       billboards1,
+      billboardsFireCenter,
       showHospital,
+      showFireCenter,
+      entityCircleOnClick,
+      onMouseout,
+      onMouseover,
     };
   },
   data() {
     return {
+      fireWeight:[],
       showDetail: false,
       form: {
         earthquakeName: '',
@@ -749,17 +794,39 @@ export default {
       // }
       this.$axios.get("/findAllHospital").then((res) => {
         console.log(res.data.length);
-        for (var i = 0; i < res.data.length; i++) {
+        for (let i = 0; i < res.data.length; i++) {
           let billboard1 = {};
           billboard1.position = {
             lng: res.data[i].lon,
             lat: res.data[i].lat,
           };
-          billboard1.image = "/fire_center3.jpg";
+          billboard1.image = "/Hospital.jpg";
           billboard1.scale = 0.1;
           that.billboards1.push(billboard1);
         }
       });
+      this.$axios.get("/calculateWeight").then((res)=>{
+        let sum=0;
+        for(let i=0; i<res.data.length; i++){
+          let billboard={};
+          billboard.position={
+            lng:res.data[i].fireLon,
+            lat:res.data[i].fireLat,
+          }
+          billboard.image="/fireCenter.jpg";
+          billboard.scale = 0.1;
+          billboard.weight=1/(1-res.data[i].fireCenterWeight);
+          sum+=billboard.weight;
+          that.billboardsFireCenter.push(billboard);
+        }
+        console.log('that.billboardsFireCenter',that.billboardsFireCenter);
+        for(let i=0;i<that.billboardsFireCenter.length;i++){
+          let fireWeight1={};
+          fireWeight1.position=that.billboardsFireCenter[i].position;
+          fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.billboardsFireCenter[i].weight/sum)*1000).toString()+"个";
+          that.fireWeight.push(fireWeight1);
+        }
+      })
     },
     onCesiumReady (e) {
       console.log(e)
