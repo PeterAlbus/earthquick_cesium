@@ -1,50 +1,9 @@
 <template>
-  <div class="detail-box" v-if="showDetail">
-    <el-descriptions
-        :title="earthquakeInfoList[quickEarthquakeIndex].earthquakeName"
-        :column="2"
-        border
-    >
-      <template #extra>
-        <el-button type="primary" @click="selectedEarthquakeIndex=quickEarthquakeIndex">选择</el-button>
-      </template>
-      <el-descriptions-item>
-        <template #label>
-          <i class="el-icon-user"></i>
-          地震名称
-        </template>
-        {{ earthquakeInfoList[quickEarthquakeIndex].earthquakeName }}
-      </el-descriptions-item>
-      <el-descriptions-item>
-        <template #label>
-          <i class="el-icon-s-data"></i>
-          震级
-        </template>
-        {{earthquakeInfoList[quickEarthquakeIndex].magnitude}}
-      </el-descriptions-item>
-      <el-descriptions-item>
-        <template #label>
-          <i class="el-icon-location-outline"></i>
-          震源经纬度
-        </template>
-        ({{ earthquakeInfoList[quickEarthquakeIndex].longitude }},{{earthquakeInfoList[quickEarthquakeIndex].latitude}})
-      </el-descriptions-item>
-      <el-descriptions-item>
-        <template #label>
-          <i class="el-icon-tickets"></i>
-          最高烈度
-        </template>
-        {{earthquakeInfoList[quickEarthquakeIndex].highIntensity}}
-      </el-descriptions-item>
-      <el-descriptions-item>
-        <template #label>
-          <i class="el-icon-office-building"></i>
-          地震发生时间
-        </template>
-        {{ earthquakeInfoList[quickEarthquakeIndex].earthquakeTime }}
-      </el-descriptions-item>
-    </el-descriptions>
-  </div>
+  <DetailBox :info="detailInfo" title="详情"
+             @onClickButton="selectedEarthquakeIndex=quickEarthquakeIndex"
+             @onClose="showDetail=false"
+             :showBox="showDetail"
+             :showButton="true"></DetailBox>
   <el-row ref="viewerContainer" class="demo-viewer">
     <vc-viewer
         ref="vcViewer"
@@ -85,7 +44,7 @@
         <vc-entity
             :position="[item.longitude,item.latitude, 0]"
             description="epicenter"
-            :id="index.toString()"
+            :id="'epicenter_'+index.toString()"
             v-for="(item,index) in earthquakeInfoList"
         >
           <vc-graphics-point ref="point1" color="red" :pixelSize="2*item.magnitude"></vc-graphics-point>
@@ -166,7 +125,7 @@
       <el-select v-model="mapStyle" placeholder="请选择" class="toolbar-item">
         <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"> </el-option>
       </el-select>
-      <el-popover placement="bottom" trigger="click">
+      <el-popover ref="controlVisible" placement="bottom" trigger="click">
         <template #reference>
           <el-button type="default" icon="el-icon-menu" round class="toolbar-item">图层控制</el-button>
         </template>
@@ -180,169 +139,13 @@
                  v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,80000)"
                  icon="el-icon-s-flag"
                  class="toolbar-item">跳转到所选震区</el-button>
-      <el-button type="primary" icon="el-icon-search" round @click="earthquakeSelectVisible=true" class="toolbar-item">地震列表</el-button>
-      <el-dialog
-          v-model="earthquakeSelectVisible"
-          title="选择地震"
-          width="50%"
-          style="z-index: 9999"
-      >
-        <el-input v-model="searchEarthquake" placeholder="输入地震名称搜索" />
-        <div class="el-dialog-div">
-          <el-descriptions
-              :title="item.earthquakeName"
-              :column="3"
-              v-for="(item,index) in earthquakeSearchResult"
-              border
-          >
-            <template #extra>
-              <el-button type="primary" size="small" v-if="index!==selectedEarthquakeIndex" v-on:click="selectEarthquakeIndex(index)">选择</el-button>
-              <el-button type="info" size="small" v-if="selectedEarthquakeIndex===index">已选择</el-button>
-              <el-button type="danger" size="small" v-on:click="deleteEarthquake(item.earthquakeId)">删除</el-button>
-            </template>
-            <el-descriptions-item>
-              <template #label>
-                <i class="el-icon-info"></i>
-                地震名称
-              </template>
-              {{ item.earthquakeName }}
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template #label>
-                <i class="el-icon-s-data"></i>
-                震级
-              </template>
-              {{item.magnitude}}
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template #label>
-                <i class="el-icon-location-outline"></i>
-                震源经纬度
-              </template>
-              ({{ item.longitude }},{{item.latitude}})
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template #label>
-                <i class="el-icon-tickets"></i>
-                最高烈度
-              </template>
-              {{item.highIntensity}}
-            </el-descriptions-item>
-            <el-descriptions-item>
-              <template #label>
-                <i class="el-icon-timer"></i>
-                地震发生时间
-              </template>
-              {{ item.earthquakeTime }}
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
-      </el-dialog>
-<!--https://restapi.amap.com/v3/geocode/regeo?output=json&location=100.008,25.727&key=e21feddaeef263e2506376a2ddbb994e&radius=1000&extensions=all-->
-      <el-button type="danger" @click="getEarthquakeSituation" round class="toolbar-item" icon="el-icon-document">评估地震情况</el-button>
-      <el-dialog
-          v-model="dialogVisible"
-          title="地震灾情快速评估"
-          width="65vw"
-          style="z-index: 9999"
-          center
-      >
-        <el-descriptions
-            :title="earthquakeInfoList[selectedEarthquakeIndex].earthquakeName"
-            :column="2"
-            border
-        >
-          <el-descriptions-item>
-            <template #label>
-              <i class="el-icon-user"></i>
-              地震名称
-            </template>
-            {{ earthquakeInfoList[selectedEarthquakeIndex].earthquakeName }}
-          </el-descriptions-item>
-          <el-descriptions-item>
-            <template #label>
-              <i class="el-icon-s-data"></i>
-              震级
-            </template>
-            {{earthquakeInfoList[selectedEarthquakeIndex].magnitude}}
-          </el-descriptions-item>
-          <el-descriptions-item>
-            <template #label>
-              <i class="el-icon-location-outline"></i>
-              震源经纬度
-            </template>
-            ({{ earthquakeInfoList[selectedEarthquakeIndex].longitude }},{{earthquakeInfoList[selectedEarthquakeIndex].latitude}})
-          </el-descriptions-item>
-          <el-descriptions-item>
-            <template #label>
-              <i class="el-icon-tickets"></i>
-              最高烈度
-            </template>
-            {{earthquakeInfoList[selectedEarthquakeIndex].highIntensity}}
-          </el-descriptions-item>
-          <el-descriptions-item>
-            <template #label>
-              <i class="el-icon-office-building"></i>
-              地震发生时间
-            </template>
-            {{ earthquakeInfoList[selectedEarthquakeIndex].earthquakeTime }}
-          </el-descriptions-item>
-        </el-descriptions>
-        <br/>
-<!--        <div style="height: 40vh;width: 55vw">-->
-<!--          <div ref="bar" style="height:40vh;width:27.5vw;float: left"></div>-->
-<!--          <div ref="bar1" style="height:40vh;width:27.5vw;float: right"></div>-->
-<!--        </div>-->
-        <div style="height: 30vh">
-          <div style="float: left;">
-              <div :style="{'--color': deathColor}" style="float: left" class="circle"/>
-              <p style="font-size: large" >&nbsp预估经济损失:{{ estimate.predictEconomy }}亿元</p>
-            <br/>
-            <div><img src="../assets/predictdeath.png"></div>
-          </div>
-          <div style="float: right;">
-            <div :style="{'--color': ecoColor}" style="float:left;" class="circle"/>
-              <p style="font-size: large">&nbsp预估死亡人数:{{ estimate.predictDeath }}人</p>
-            <br/>
-            <div><img src="../assets/predictdeath.png"></div>
-          </div>
-        </div>
-      </el-dialog>
-      <el-button type="success" round @click="addEarthquakeVisible=true" class="toolbar-item" icon="el-icon-plus">添加地震</el-button>
-      <el-dialog
-          v-model="addEarthquakeVisible"
-          title="添加地震"
-          width="50%"
-          style="z-index: 9999"
-      >
-        <el-form ref="form" :model="form" label-width="120px">
-          <el-form-item label="地震名称">
-            <el-input v-model="form.earthquakeName"></el-input>
-          </el-form-item>
-          <el-form-item label="震级">
-            <el-input v-model="form.magnitude"></el-input>
-          </el-form-item>
-          <el-form-item label="震源经度">
-            <el-input v-model="form.longitude"></el-input>
-          </el-form-item>
-          <el-form-item label="震源纬度">
-            <el-input v-model="form.latitude"></el-input>
-          </el-form-item>
-          <el-form-item label="地震发生时间">
-            <el-date-picker
-                v-model="form.earthquakeTime"
-                type="datetime"
-                placeholder="选择地震发生时间"
-                value-format="YYYY-MM-DD HH:mm:ss"
-            >
-            </el-date-picker>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="onSubmit">提交</el-button>
-            <el-button @click="addEarthquakeVisible=false">取消</el-button>
-          </el-form-item>
-        </el-form>
-      </el-dialog>
+      <EarthquakeSelect
+          :earthquakeInfoList="earthquakeInfoList"
+          :selectedEarthquakeIndex="selectedEarthquakeIndex"
+          @changeSelect="selectEarthquakeIndex"
+      ></EarthquakeSelect>
+      <EstimateEarthquake :earthquake="earthquakeInfoList[selectedEarthquakeIndex]"></EstimateEarthquake>
+      <AddEarthquake></AddEarthquake>
       <!-- hyc2 -->
       <el-button
         type="primary"
@@ -356,9 +159,19 @@
 
 <script>
 import {getCurrentInstance, reactive, ref, onMounted } from "vue";
+import DetailBox from "../components/DetailBox";
+import EarthquakeSelect from "../components/EarthquakeSelect";
+import AddEarthquake from "../components/AddEarthquake";
+import EstimateEarthquake from "../components/EstimateEarthquake";
 import echarts from "echarts";
 export default {
   name: "Cesium",
+  components: {
+    DetailBox,
+    EarthquakeSelect,
+    AddEarthquake,
+    EstimateEarthquake
+  },
   setup() {
     // hyc:数据初始化
     const collectionRef = ref(null);
@@ -366,9 +179,6 @@ export default {
     const billboardsFireCenter=ref([]);
     const showHospital = ref(false);
     const showFireCenter=ref(false);
-    const dialogVisible = ref(false);
-    const earthquakeSelectVisible = ref(false);
-    const addEarthquakeVisible = ref(false);
     const entityCircleOnClick = ref(null)
     // state
     const instance = getCurrentInstance()
@@ -463,9 +273,6 @@ export default {
       onDatasourceReady,
       datasourceRef,
       entities,
-      dialogVisible,
-      addEarthquakeVisible,
-      earthquakeSelectVisible,
       // hyc
       collectionRef,
       billboards1,
@@ -481,13 +288,8 @@ export default {
     return {
       fireWeight:[],
       showDetail: false,
-      form: {
-        earthquakeName: '',
-        magnitude: '',
-        longitude: '',
-        latitude: '',
-        earthquakeTime: '',
-      },
+      detailClass: 0,
+      detailIndex: 0,
       //earthquakeInfo
       earthquakeInfoList:[{
         earthquakeId:1,
@@ -506,13 +308,6 @@ export default {
           earthquakeId:1
         }]
       }],
-      estimate:{
-        predictDeath:'',
-        predictEconomy:'',
-        population:'',
-      },
-      deathColor: '#00B14E',
-      ecoColor: '#00B14E',
       selectedEarthquakeIndex:0,
       quickEarthquakeIndex:0,
       //mesure
@@ -526,7 +321,7 @@ export default {
       timeline: false,
       baseLayerPicker: false,
       fullscreenButton: false,
-      infoBox: true,
+      infoBox: false,
       showCredit: false,
       fullscreenElement: document.body,
       offset: [10, 25],
@@ -537,7 +332,6 @@ export default {
       showIntensity: true,
       showGeojson: false,
       showEpicenter: false,
-      searchEarthquake: "",
       // hyc2
       num: 0,
       SuccessClick: false,
@@ -550,6 +344,7 @@ export default {
       endLon: 0.0,
       endLat: 0.0,
       endHei: 0.0,
+      hospitalList: []
     };
   },
   watch: {
@@ -600,89 +395,16 @@ export default {
             that.selectedEarthquakeIndex=0;
           })
     },
-    onSubmit() {
-      let that=this;
-      that.$axios.get('earthquakeInfo/addEarthquake?'+that.$qs.stringify(that.form))
-      .then(res=>{
-        if(res.data==='success')
-        {
-          that.$message('添加成功');
-          that.getEarthquakeList();
-          this.addEarthquakeVisible=false;
-        }
-        else
-        {
-          that.$message('添加失败');
-        }
-      })
-    },
-    getEarthquakeSituation(){
-      let that=this;
-      that.$axios.get('estimate/getAnalyzeResult?earthquakeId='+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId)
-      .then(res=>{
-        let temp_analyze = res.data;
-        let temp_predictDeath= temp_analyze.predictDeath;
-        let temp_predictEconomy = temp_analyze.predictEconomy;
-        if(temp_predictDeath <= 1){
-          that.estimate.predictDeath = '0-1';
-          that.deathColor = '#00B14E'
-        }
-        else if(temp_predictDeath <= 10){
-          that.estimate.predictDeath = '1-10';
-          that.deathColor = '#FFFF00'
-        }
-        else if(temp_predictDeath <= 100){
-          that.estimate.predictDeath = '10-100';
-          that.deathColor = '#FFFF00'
-        }
-        else if(temp_predictDeath <= 1000){
-          that.estimate.predictDeath = '100-1000';
-          that.deathColor = '#FF9900'
-        }
-        else {
-          that.estimate.predictDeath = '大于1000';
-          that.deathColor = '#FF0000'
-        }
-          if(temp_predictEconomy <= 1){
-            that.estimate.predictEconomy = temp_predictEconomy;
-            that.ecoColor = '#00B14E'
-          }
-          else if(temp_predictEconomy <= 10){
-            that.estimate.predictEconomy = temp_predictEconomy;
-            that.ecoColor = '#FFFF00'
-          }
-          else if(temp_predictEconomy <= 100){
-            that.estimate.predictEconomy = temp_predictEconomy;
-            that.ecoColor = '#FFFF00'
-          }
-          else if(temp_predictEconomy <= 1000){
-            that.estimate.predictEconomy = temp_predictEconomy;
-            that.ecoColor = '#FF9900'
-          }
-          else {
-            that.estimate.predictEconomy = temp_predictEconomy;
-            that.ecoColor = '#FF0000'
-          }
-          that.dialogVisible = true;
-      })
-    },
     selectEarthquakeIndex(index){
       this.selectedEarthquakeIndex=index;
       this.earthquakeSelectVisible=false;
     },
-    deleteEarthquake(id){
-      let that=this;
-      that.$axios.get('earthquakeInfo/deleteById?earthquakeId='+id)
-      .then(res=>{
-        if(res.data==='success')
-        {
-          that.getEarthquakeList();
-        }
-      })
-    },
     getPosition(viewer, event) {
+      console.log(event.position)
       let position = viewer.scene.pickPosition(event.position);
+      console.log(position)
       let cartographic = Cesium.Cartographic.fromCartesian(position);
+      console.log(cartographic)
       this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
       this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
       this.heiTemp = cartographic.height; //高度
@@ -760,13 +482,24 @@ export default {
     },
     pickEvt(e){
       console.log('pickEvt',e)
+      this.$refs.controlVisible.showPopper = false;
       try{
-        let des=e.cesiumObject.description
+        let kind=e.id.split("_")[0]
         let index=0
-        if(des._value==='epicenter')
+        if(kind==='epicenter')
         {
-          index=parseInt(e.id)
+          index=parseInt(e.id.split("_")[1])
           this.showDetail=true
+          this.detailClass=1
+          this.detailIndex=index
+          this.quickEarthquakeIndex=index
+        }
+        else if(kind==='hospital')
+        {
+          index=parseInt(e.id.split("_")[1])
+          this.showDetail=true
+          this.detailClass=2
+          this.detailIndex=index
           this.quickEarthquakeIndex=index
         }
         else
@@ -782,25 +515,17 @@ export default {
       this.loading = false;
       // hyc
       let that = this;
-      // for (var i = 0; i < 100; i++) {
-      //   let billboard1 = {};
-      //   billboard1.position = {
-      //     lng: Math.random() * 40 + 85,
-      //     lat: Math.random() * 30 + 21,
-      //   };
-      //   billboard1.image = "https://zouyaoji.top/vue-cesium/favicon.png";
-      //   billboard1.scale = 0.1;
-      //   that.billboards1.push(billboard1);
-      // }
       this.$axios.get("/findAllHospital").then((res) => {
         console.log(res.data.length);
+        this.hospitalList=res.data
         for (let i = 0; i < res.data.length; i++) {
           let billboard1 = {};
           billboard1.position = {
             lng: res.data[i].lon,
             lat: res.data[i].lat,
           };
-          billboard1.image = "/Hospital.jpg";
+          billboard1.id='hospital_'+i
+          billboard1.image = "/Hospital.png";
           billboard1.scale = 0.1;
           that.billboards1.push(billboard1);
         }
@@ -813,7 +538,7 @@ export default {
             lng:res.data[i].fireLon,
             lat:res.data[i].fireLat,
           }
-          billboard.image="/fireCenter.jpg";
+          billboard.image="/fireCenter.png";
           billboard.scale = 0.1;
           billboard.weight=1/(1-res.data[i].fireCenterWeight);
           sum+=billboard.weight;
@@ -1214,45 +939,63 @@ export default {
     },
   },
   computed:{
-    earthquakeSearchResult: function(){
-      let result=[];
-      if(this.searchEarthquake==='')
+    detailInfo: function (){
+      let info=[]
+      if(this.detailClass===1)
       {
-        return this.earthquakeInfoList;
+        info=[
+          {
+            key:'地震名称',
+            value: this.earthquakeInfoList[this.detailIndex].earthquakeName,
+          },
+          {
+            key:'震级',
+            value: this.earthquakeInfoList[this.detailIndex].magnitude,
+          },
+          {
+            key:'震源经纬度',
+            value: this.earthquakeInfoList[this.detailIndex].longitude+','+this.earthquakeInfoList[this.detailIndex].latitude,
+          },
+          {
+            key:'震中烈度',
+            value: this.earthquakeInfoList[this.detailIndex].highIntensity,
+          },
+          {
+            key:'发生时间',
+            value: this.earthquakeInfoList[this.detailIndex].earthquakeTime,
+          },]
       }
-      for(let i=0;i<this.earthquakeInfoList.length;i++)
+      else if(this.detailClass===2)
       {
-        let str=this.earthquakeInfoList[i].earthquakeName;
-        if(str.search(this.searchEarthquake)!==-1)
-        {
-          result.push(this.earthquakeInfoList[i]);
-        }
+        info=[
+          {
+            key:'医院名称',
+            value: this.hospitalList[this.detailIndex].name,
+          },
+          {
+            key:'地址',
+            value: this.hospitalList[this.detailIndex].address,
+          },
+          {
+            key:'经纬度',
+            value: this.hospitalList[this.detailIndex].lon+','+this.hospitalList[this.detailIndex].lat,
+          },
+          {
+            key:'所在省市',
+            value: this.hospitalList[this.detailIndex].pname+this.hospitalList[this.detailIndex].cityname,
+          },
+          {
+            key:'类型',
+            value: this.hospitalList[this.detailIndex].type,
+          },]
       }
-      return result;
+      return info
     }
   }
 }
 </script>
 
 <style scoped>
-.detail-box{
-  position: absolute;
-  bottom: 10%;
-  right: 30px;
-  color: #fff!important;
-  background-color: #ffffff;
-  min-width: 100px;
-  z-index: 999;
-
-  box-shadow: 3px 3px 3px 3px #333333;
-}
-
-.el-dialog-div{
-  height: 50vh;
-  overflow: auto;
-  padding: 10px;
-}
-
 .demo-toolbar {
   position: absolute;
   left: 1%;
@@ -1278,18 +1021,5 @@ export default {
   height: 62.5px;
   background: var(--color);
   /* 宽度和高度需要相等 */
-}
-::-webkit-scrollbar {
-  width: 6px;
-  background-color: #F5F5F5;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #6FB0FC;
-}
-
-::-webkit-scrollbar-track {
-  -webkit-box-shadow: inset 0 0 6px rgb(0 0 0 / 30%);
-  background-color: #F5F5F5;
 }
 </style>

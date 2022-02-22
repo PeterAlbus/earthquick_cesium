@@ -9,6 +9,7 @@
   "dependencies": {
     "@element-plus/icons": "^0.0.11",
     "axios": "^0.24.0",
+    "cesium-popup-es6": "^0.14.0",
     "echarts": "^5.2.2",
     "element-plus": "^1.1.0-beta.9",
     "qs": "^6.10.1",
