@@ -163,7 +163,6 @@ import DetailBox from "../components/DetailBox";
 import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
 import EstimateEarthquake from "../components/EstimateEarthquake";
-import echarts from "echarts";
 export default {
   name: "Cesium",
   components: {
@@ -566,62 +565,6 @@ export default {
     //   console.log('onLeftClick',e)
     //
     // }
-    open() {
-      this.$nextTick(() => {
-        this.draw()
-      })
-    },
-    draw(){
-      let echarts = require('echarts')
-      let myEcharts = echarts.init(this.$refs.bar)
-      let option = {
-        title: {
-          text: '灾区人口密度以及GDP'
-        },
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: {
-            type: 'shadow'
-          }
-        },
-        xAxis: {
-          type: 'category',
-          data: ['2022年1月']
-        },
-        yAxis: [
-          {
-          name: '人口密度(人/km²)',
-          position: 'left',
-            data: ['oo','0-1','1-10','10-100','100+'],
-            axisTick:{ show:false }
-        },
-          {
-            name: 'GDP(亿元)',
-            position: 'right',
-            data: ['oo','0-1','1-10','10-100','100+']
-          }],
-        series: [
-          {
-            name: '人口密度',
-            data: [this.predict.predictDeath],
-            yAxisIndex: 0,
-            type: 'bar',
-            // showBackground: true,
-            // backgroundStyle: {
-            //   color: 'rgba(220, 220, 220, 0.8)'
-            // }
-          },
-          {
-            name: 'GDP',
-            type: 'bar',
-            smooth: true,
-            yAxisIndex: 1,
-            data: [20]
-          }
-        ]
-      };
-      myEcharts.setOption(option)
-    },
 
     // hyc2
     // startFindRoad(){
