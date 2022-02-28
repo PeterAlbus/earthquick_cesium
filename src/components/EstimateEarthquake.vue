@@ -49,19 +49,23 @@
       </el-descriptions-item>
     </el-descriptions>
     <br/>
-    <!--        <div style="height: 40vh;width: 55vw">-->
-    <!--          <div ref="bar" style="height:40vh;width:27.5vw;float: left"></div>-->
-    <!--          <div ref="bar1" style="height:40vh;width:27.5vw;float: right"></div>-->
-    <!--        </div>-->
+    <el-card style="height: 7.5vh" shadow="hover">
+      <div>估算的人口密度：&nbsp{{estimate.population}}人/km²（计算结果仅供参考）</div>
+    </el-card>
+    <br/>
+<!--            <div style="height: 40vh;width: 55vw">-->
+<!--              <div ref="bar" style="height:40vh;width:27.5vw;float: left"></div>-->
+<!--              <div ref="bar1" style="height:40vh;width:27.5vw;float: right"></div>-->
+<!--            </div>-->
     <div style="height: 30vh">
       <div style="float: left;">
-        <div :style="{'--color': deathColor}" style="float: left" class="circle"/>
+        <div :style="{'--color': ecoColor}" style="float: left" class="circle"/>
         <p style="font-size: large" >&nbsp;预估经济损失:{{ estimate.predictEconomy }}亿元</p>
         <br/>
         <div><img src="../assets/predictdeath.png" alt=""></div>
       </div>
       <div style="float: right;">
-        <div :style="{'--color': ecoColor}" style="float:left;" class="circle"/>
+        <div :style="{'--color': deathColor}" style="float:left;" class="circle"/>
         <p style="font-size: large">&nbsp;预估死亡人数:{{ estimate.predictDeath }}人</p>
         <br/>
         <div><img src="../assets/predictdeath.png" alt=""></div>
@@ -94,6 +98,7 @@ export default {
             let temp_analyze = res.data;
             let temp_predictDeath= temp_analyze.predictDeath;
             let temp_predictEconomy = temp_analyze.predictEconomy;
+            that.estimate.population = temp_analyze.population;
             if(temp_predictDeath <= 1){
               that.estimate.predictDeath = '0-1';
               that.deathColor = '#00B14E'
@@ -142,5 +147,11 @@ export default {
 </script>
 
 <style scoped>
-
+.circle {
+  border-radius: 50%;
+  width: 62.5px;
+  height: 62.5px;
+  background: var(--color);
+  /* 宽度和高度需要相等 */
+}
 </style>

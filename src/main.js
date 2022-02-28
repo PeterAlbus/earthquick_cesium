@@ -10,7 +10,8 @@ import VueAxios from 'vue-axios'
 import qs from 'qs'
 
 axios.defaults.withCredentials=false;
-axios.defaults.baseURL='https://www.peteralbus.com:8087/'
+// axios.defaults.baseURL='https://www.peteralbus.com:8087/'
+axios.defaults.baseURL='http://localhost:8087/'
 // axios.defaults.baseURL="http://localhost:8087/"
 const app = createApp(App)
 app.config.globalProperties.$axios=axios;
