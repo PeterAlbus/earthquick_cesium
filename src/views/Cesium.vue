@@ -20,7 +20,7 @@
     >
       <vc-selection-indicator ref="selectionIndicator" @pickEvt="pickEvt"></vc-selection-indicator>
       <vc-measurements
-          @measureEvt="measureEvt"
+
           @activeEvt="activeEvt"
           @editorEvt="editorEvt"
           @mouseEvt="mouseEvt"
@@ -158,12 +158,11 @@
 </template>
 
 <script>
-import {getCurrentInstance, reactive, ref, onMounted } from "vue";
+import {getCurrentInstance, reactive, ref } from "vue";
 import DetailBox from "../components/DetailBox";
 import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
 import EstimateEarthquake from "../components/EstimateEarthquake";
-import echarts from "echarts";
 export default {
   name: "Cesium",
   components: {
@@ -366,9 +365,9 @@ export default {
     this.$refs.vcViewer.createPromise.then(({ Cesium, viewer }) => {
       console.log('viewer is loaded.')
       viewer.scene.globe.depthTestAgainstTerrain = false;
-      let iframe = document.getElementsByClassName('cesium-infoBox-iframe')[0]
-      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms')
-      iframe.setAttribute('src', '')
+      // let iframe = document.getElementsByClassName('cesium-infoBox-iframe')[0]
+      // iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms')
+      // iframe.setAttribute('src', '')
       // let handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
       // let that=this;
       // handler.setInputAction(function (event) {
@@ -378,11 +377,11 @@ export default {
       // hyc2
       window.earth = viewer;
       //定义canvas屏幕点击事件
-      var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      let that = this;
-      handler.setInputAction(function (event) {
-        that.getPosition(viewer, event);
-      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      // var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      // let that = this;
+      // handler.setInputAction(function (event) {
+      //   that.getPosition(viewer, event);
+      // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     });
   },
   methods: {
@@ -481,8 +480,22 @@ export default {
       )
     },
     pickEvt(e){
-      console.log('pickEvt',e)
       this.$refs.controlVisible.showPopper = false;
+      try{
+        if(e._id==='__Vc__Pick__Location__')
+        {
+          console.log('pickEvt',e)
+          let cartographic = Cesium.Cartographic.fromCartesian(e._position._value);
+          this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
+          this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
+          this.heiTemp = cartographic.height; //高度
+          this.num++
+          console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
+        }
+      }
+      catch (e) {
+
+      }
       try{
         let kind=e.id.split("_")[0]
         let index=0
@@ -566,62 +579,6 @@ export default {
     //   console.log('onLeftClick',e)
     //
     // }
-    open() {
-      this.$nextTick(() => {
-        this.draw()
-      })
-    },
-    draw(){
-      let echarts = require('echarts')
-      let myEcharts = echarts.init(this.$refs.bar)
-      let option = {
-        title: {
-          text: '灾区人口密度以及GDP'
-        },
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: {
-            type: 'shadow'
-          }
-        },
-        xAxis: {
-          type: 'category',
-          data: ['2022年1月']
-        },
-        yAxis: [
-          {
-          name: '人口密度(人/km²)',
-          position: 'left',
-            data: ['oo','0-1','1-10','10-100','100+'],
-            axisTick:{ show:false }
-        },
-          {
-            name: 'GDP(亿元)',
-            position: 'right',
-            data: ['oo','0-1','1-10','10-100','100+']
-          }],
-        series: [
-          {
-            name: '人口密度',
-            data: [this.predict.predictDeath],
-            yAxisIndex: 0,
-            type: 'bar',
-            // showBackground: true,
-            // backgroundStyle: {
-            //   color: 'rgba(220, 220, 220, 0.8)'
-            // }
-          },
-          {
-            name: 'GDP',
-            type: 'bar',
-            smooth: true,
-            yAxisIndex: 1,
-            data: [20]
-          }
-        ]
-      };
-      myEcharts.setOption(option)
-    },
 
     // hyc2
     // startFindRoad(){

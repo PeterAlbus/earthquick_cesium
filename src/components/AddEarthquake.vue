@@ -4,7 +4,6 @@
       v-model="addEarthquakeVisible"
       title="添加地震"
       width="50%"
-      style="z-index: 9999"
   >
     <el-form ref="form" :model="form" label-width="120px">
       <el-form-item label="地震名称">

@@ -4,7 +4,6 @@
       v-model="dialogVisible"
       title="地震灾情快速评估"
       width="65vw"
-      style="z-index: 9999"
       center
   >
     <el-descriptions

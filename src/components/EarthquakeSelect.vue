@@ -4,7 +4,6 @@
       v-model="earthquakeSelectVisible"
       title="选择地震"
       width="50%"
-      style="z-index: 9999"
   >
     <el-input v-model="searchEarthquake" placeholder="输入地震名称搜索" />
     <el-collapse>
