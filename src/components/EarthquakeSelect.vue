@@ -5,25 +5,43 @@
       title="选择地震"
       width="50%"
   >
-    <el-input v-model="searchEarthquake" placeholder="输入地震名称搜索" />
-    <el-collapse>
-      <el-collapse-item title="条件筛选">
-        <el-form>
-          <el-form-item label="时间范围">
-            <el-date-picker
-                v-model="timeRange"
-                :shortcuts="shortcuts"
-                type="datetimerange"
-                range-separator="到"
-                start-placeholder="最早日期"
-                end-placeholder="最晚日期"
-            >
-            </el-date-picker>
-          </el-form-item>
-        </el-form>
-      </el-collapse-item>
-    </el-collapse>
+    <div>
+      <el-input v-model="searchEarthquake" placeholder="输入地震名称搜索"/>
+    </div>
+
     <div class="el-dialog-div">
+      <el-collapse>
+        <el-collapse-item title="条件筛选">
+          <el-form>
+            <el-form-item label="时间范围">
+              <el-date-picker
+                  v-model="timeRange"
+                  :shortcuts="shortcuts"
+                  type="datetimerange"
+                  range-separator="到"
+                  start-placeholder="最早日期"
+                  end-placeholder="最晚日期"
+              >
+              </el-date-picker>
+            </el-form-item>
+            <el-form-item label="限制区域">
+              <el-select v-model="area" placeholder="Select">
+                <el-option
+                    v-for="item in areas"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                >
+                </el-option>
+              </el-select>
+            </el-form-item>
+            <div style="float: right">
+              <el-button round type="primary" @click="selectEarthquakeByCondition">筛选</el-button>
+              <el-button round type="success" @click="$emit('updateList')">显示全部</el-button>
+            </div>
+          </el-form>
+        </el-collapse-item>
+      </el-collapse>
       <el-descriptions
           :title="item.earthquakeName"
           :column="3"
@@ -78,12 +96,23 @@
 <script>
 export default {
   props: ['earthquakeInfoList','selectedEarthquakeIndex'],
-  emits: ['changeSelect'],
+  emits: ['changeSelect','updateList','newList'],
   name: "EarthquakeSelect",
   data() {
     return {
       earthquakeSelectVisible:false,
       searchEarthquake: "",
+      area: "any",
+      areas: [
+        {
+          value: "any",
+          label: "无限制"
+        },
+        {
+          value:"china",
+          label:"中国"
+        }
+      ],
       timeRange:[
         new Date(2000, 10, 10, 10, 10),
         new Date(),
@@ -153,10 +182,38 @@ export default {
           .then(res=>{
             if(res.data==='success')
             {
-              that.getEarthquakeList();
+              that.$emit('updateList')
             }
           })
     },
+    selectEarthquakeByCondition(){
+      let that=this;
+      let start=that.dateFtt("yyyy-MM-dd hh:mm:ss",that.timeRange[0])
+      let end=that.dateFtt("yyyy-MM-dd hh:mm:ss",that.timeRange[1])
+      that.$axios.get('earthquakeInfo/getEarthquakeByCondition?area='+that.area+'&start='+start+'&end='+end)
+          .then(res=>{
+            console.log(res.data)
+            that.$emit('newList',res.data)
+          })
+    },
+    dateFtt(fmt,date) {
+      //author: meizz
+      var o = {
+        "M+" : date.getMonth()+1,                 //月份
+        "d+" : date.getDate(),                    //日
+        "h+" : date.getHours(),                   //小时
+        "m+" : date.getMinutes(),                 //分
+        "s+" : date.getSeconds(),                 //秒
+        "q+" : Math.floor((date.getMonth()+3)/3), //季度
+        "S"  : date.getMilliseconds()             //毫秒
+      };
+      if(/(y+)/.test(fmt))
+        fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));
+      for(var k in o)
+        if(new RegExp("("+ k +")").test(fmt))
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+      return fmt;
+    }
   },
   computed:{
     earthquakeSearchResult: function(){
@@ -181,7 +238,7 @@ export default {
 
 <style scoped>
 .el-dialog-div{
-  height: 40vh;
+  height: 50vh;
   overflow: auto;
   padding: 10px;
 }

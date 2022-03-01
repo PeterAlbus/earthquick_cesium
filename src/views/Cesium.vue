@@ -143,6 +143,8 @@
           :earthquakeInfoList="earthquakeInfoList"
           :selectedEarthquakeIndex="selectedEarthquakeIndex"
           @changeSelect="selectEarthquakeIndex"
+          @updateList="getEarthquakeList"
+          @newList="newEarthquakeList"
       ></EarthquakeSelect>
       <EstimateEarthquake :earthquake="earthquakeInfoList[selectedEarthquakeIndex]"></EstimateEarthquake>
       <AddEarthquake></AddEarthquake>
@@ -385,6 +387,9 @@ export default {
     });
   },
   methods: {
+    newEarthquakeList(list){
+      this.earthquakeInfoList=list
+    },
     getEarthquakeList(){
       let that=this;
       that.$axios.get("earthquakeInfo/getAllEarthquake")
@@ -484,7 +489,7 @@ export default {
       try{
         if(e._id==='__Vc__Pick__Location__')
         {
-          console.log('pickEvt',e)
+          // console.log('pickEvt',e)
           let cartographic = Cesium.Cartographic.fromCartesian(e._position._value);
           this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
           this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
