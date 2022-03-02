@@ -20,7 +20,7 @@
     >
       <vc-selection-indicator ref="selectionIndicator" @pickEvt="pickEvt"></vc-selection-indicator>
       <vc-measurements
-
+          @measureEvt="measureEvt"
           @activeEvt="activeEvt"
           @editorEvt="editorEvt"
           @mouseEvt="mouseEvt"
@@ -79,10 +79,10 @@
       </vc-datasource-custom>
 <!--      <vc-provider-terrain-tianditu token="125c8a9d540afbc15a4feb04d9c2e8ef"></vc-provider-terrain-tianditu>-->
       <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="20">
-        <vc-provider-imagery-tianditu mapStyle="cva_w" token="fb9aa5004fb3881361611a709aff4c59"></vc-provider-imagery-tianditu>
+        <vc-provider-imagery-tianditu mapStyle="cva_w" token="56f5edbed8528ad2a3ed6e1f4ba902da"></vc-provider-imagery-tianditu>
       </vc-layer-imagery>
       <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="10">
-        <vc-provider-imagery-tianditu :mapStyle="mapStyle" token="fb9aa5004fb3881361611a709aff4c59" ref="provider"></vc-provider-imagery-tianditu>
+        <vc-provider-imagery-tianditu :mapStyle="mapStyle" token="56f5edbed8528ad2a3ed6e1f4ba902da" ref="provider"></vc-provider-imagery-tianditu>
       </vc-layer-imagery>
 
 <!--      <vc-primitive-tileset-->
@@ -160,11 +160,12 @@
 </template>
 
 <script>
-import {getCurrentInstance, reactive, ref } from "vue";
+import {getCurrentInstance, reactive, ref, onMounted } from "vue";
 import DetailBox from "../components/DetailBox";
 import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
 import EstimateEarthquake from "../components/EstimateEarthquake";
+import echarts from "echarts";
 export default {
   name: "Cesium",
   components: {
@@ -379,11 +380,11 @@ export default {
       // hyc2
       window.earth = viewer;
       //定义canvas屏幕点击事件
-      // var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      // let that = this;
-      // handler.setInputAction(function (event) {
-      //   that.getPosition(viewer, event);
-      // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      let that = this;
+      handler.setInputAction(function (event) {
+        that.getPosition(viewer, event);
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     });
   },
   methods: {
@@ -406,9 +407,7 @@ export default {
     getPosition(viewer, event) {
       console.log(event.position)
       let position = viewer.scene.pickPosition(event.position);
-      console.log(position)
       let cartographic = Cesium.Cartographic.fromCartesian(position);
-      console.log(cartographic)
       this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
       this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
       this.heiTemp = cartographic.height; //高度
@@ -485,6 +484,7 @@ export default {
       )
     },
     pickEvt(e){
+      console.log('pickEvt',e)
       this.$refs.controlVisible.showPopper = false;
       try{
         if(e._id==='__Vc__Pick__Location__')
@@ -584,6 +584,62 @@ export default {
     //   console.log('onLeftClick',e)
     //
     // }
+    open() {
+      this.$nextTick(() => {
+        this.draw()
+      })
+    },
+    draw(){
+      let echarts = require('echarts')
+      let myEcharts = echarts.init(this.$refs.bar)
+      let option = {
+        title: {
+          text: '灾区人口密度以及GDP'
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          }
+        },
+        xAxis: {
+          type: 'category',
+          data: ['2022年1月']
+        },
+        yAxis: [
+          {
+          name: '人口密度(人/km²)',
+          position: 'left',
+            data: ['oo','0-1','1-10','10-100','100+'],
+            axisTick:{ show:false }
+        },
+          {
+            name: 'GDP(亿元)',
+            position: 'right',
+            data: ['oo','0-1','1-10','10-100','100+']
+          }],
+        series: [
+          {
+            name: '人口密度',
+            data: [this.predict.predictDeath],
+            yAxisIndex: 0,
+            type: 'bar',
+            // showBackground: true,
+            // backgroundStyle: {
+            //   color: 'rgba(220, 220, 220, 0.8)'
+            // }
+          },
+          {
+            name: 'GDP',
+            type: 'bar',
+            smooth: true,
+            yAxisIndex: 1,
+            data: [20]
+          }
+        ]
+      };
+      myEcharts.setOption(option)
+    },
 
     // hyc2
     // startFindRoad(){
@@ -674,7 +730,6 @@ export default {
       var search = this.searchRoute([startp[0], startp[1]], [endP[0], endP[1]]);
     },
     searchRoute(startP, endP) {
-      console.log("1111111111111111", startP, endP);
       var startP = this.wgs2gcj(startP);
       var endP = this.wgs2gcj(endP);
       let that = this;
@@ -693,11 +748,11 @@ export default {
           // that.addRouteLine(res.data.route.paths[0].steps);
           console.log("res的值为", res);
           let steps = res.data.route.paths[0].steps;
+          let arr = [];
           for (var i = 0; i < steps.length; i++) {
             var item = steps[i];
             var positionStr = item.polyline;
             var strArr = positionStr.split(";");
-            var arr = [];
             for (var z = 0; z < strArr.length; z++) {
               var item2 = strArr[z];
               var strArr2 = item2.split(",");
@@ -785,6 +840,7 @@ export default {
 
       mglng = Number(mglng.toFixed(6));
       mglat = Number(mglat.toFixed(6));
+      console.log("wgs2gcj"+mglng+"  "+mglat)
       return [mglng, mglat];
     },
 
@@ -815,6 +871,7 @@ export default {
       return [jd, wd];
     },
     cartesianToLnglat(cartesian, isToWgs84) {
+      console.log("cartesian",cartesian)
       if (isToWgs84) {
         var lat = cartesian.latitude;
         var lng = cartesian.longitude;
