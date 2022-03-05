@@ -49,7 +49,7 @@
           border
       >
         <template #extra>
-          <el-button type="primary" size="small" v-if="index!==selectedEarthquakeIndex" v-on:click="$emit('changeSelect',index)">选择</el-button>
+          <el-button type="primary" size="small" v-if="index!==selectedEarthquakeIndex" v-on:click="$emit('changeSelect',index);earthquakeSelectVisible=false">选择</el-button>
           <el-button type="info" size="small" v-if="selectedEarthquakeIndex===index">已选择</el-button>
           <el-button type="danger" size="small" v-on:click="deleteEarthquake(item.earthquakeId)">删除</el-button>
         </template>

@@ -17,7 +17,7 @@ app.config.globalProperties.$axios=axios;
 app.config.globalProperties.$qs=qs;
 app.use(ElementPlus)
 app.use(VueCesium, {
-    cesiumPath: '/Cesium/Cesium.js',
+    cesiumPath: 'https://file.peteralbus.com/assets/cesium/Cesium191/Cesium.js',
     accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5MWVhZmFlYS1mYWU2LTQ2ZDQtOTk5ZS03ZGE3MjQyM2FlODYiLCJpZCI6NjE3MjEsImlhdCI6MTYyNjMxMzk3NX0.bdlFAJG5w5iqwdFiFxPfW_h4H5nElCoyqIY0WjUcBvU'
 })
 

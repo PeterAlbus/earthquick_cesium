@@ -1,46 +1,69 @@
 <template>
   <DetailBox :info="detailInfo" title="详情"
-             @onClickButton="selectedEarthquakeIndex=quickEarthquakeIndex"
-             @onClose="showDetail=false"
-             :showBox="showDetail"
-             :showButton="true"></DetailBox>
-  <el-row ref="viewerContainer" class="demo-viewer">
+             @onClickButton="selectedEarthquakeIndex=detailBox.quickEarthquakeIndex"
+             @onClose="detailBox.showDetail=false"
+             :showBox="detailBox.showDetail"
+             :showButton="detailBox.showButton"></DetailBox>
+  <el-row class="toolbar">
+    <el-select v-model="imageryConfig.mapStyle" placeholder="请选择" class="toolbar-item">
+      <el-option v-for="item in imageryConfig.options" :key="item.value" :label="item.label" :value="item.value"> </el-option>
+    </el-select>
+    <el-popover ref="controlVisible" placement="bottom" trigger="click" v-model:visible="layerControl.visible">
+      <template #reference>
+        <el-button type="default" icon="el-icon-menu" round class="toolbar-item">图层控制</el-button>
+      </template>
+      <el-checkbox v-model="layerControl.showIntensity" label="烈度图"></el-checkbox><br/>
+      <el-checkbox v-model="layerControl.showEpicenter" label="震源"></el-checkbox>
+      <el-checkbox v-model="layerControl.showHospital" label="显示医院"></el-checkbox>
+      <el-checkbox v-model="layerControl.showFireCenter" label="显示救援物资分配"></el-checkbox>
+    </el-popover>
+    <el-button type="primary" round
+               v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,100000)"
+               icon="el-icon-s-flag"
+               class="toolbar-item">跳转到所选震区</el-button>
+    <EarthquakeSelect
+        :earthquakeInfoList="earthquakeInfoList"
+        :selectedEarthquakeIndex="selectedEarthquakeIndex"
+        @changeSelect="selectEarthquakeIndex"
+        @updateList="getEarthquakeList"
+        @newList="updateEarthquakeList"
+    ></EarthquakeSelect>
+    <EstimateEarthquake :earthquake="earthquakeInfoList[selectedEarthquakeIndex]"></EstimateEarthquake>
+    <AddEarthquake></AddEarthquake>
+    <!-- hyc2 -->
+    <el-button
+        type="primary"
+        round
+        @click="getPositionRoad"
+        class="toolbar-item"
+    >开始路径规划</el-button>
+  </el-row>
+  <el-row ref="viewerContainer" class="viewer">
     <vc-viewer
         ref="vcViewer"
-        :animation="animation"
-        :baseLayerPicker="baseLayerPicker"
-        :timeline="timeline"
-        :fullscreenButton="fullscreenButton"
-        :fullscreenElement="fullscreenElement"
-        :infoBox="infoBox"
+        :animation="viewerConfig.animation"
+        :baseLayerPicker="viewerConfig.baseLayerPicker"
+        :timeline="viewerConfig.timeline"
+        :fullscreenButton="viewerConfig.fullscreenButton"
+        :fullscreenElement="viewerConfig.fullscreenElement"
+        :infoBox="viewerConfig.infoBox"
         :selectionIndicator="false"
-        :showCredit="showCredit"
-        @cesiumReady="onCesiumReady"
+        :showCredit="viewerConfig.showCredit"
         @ready="onViewerReady"
     >
       <vc-selection-indicator ref="selectionIndicator" @pickEvt="pickEvt"></vc-selection-indicator>
       <vc-measurements
-
-          @activeEvt="activeEvt"
-          @editorEvt="editorEvt"
-          @mouseEvt="mouseEvt"
+          @draw-evt="drawEvt"
+          @active-evt="activeEvt"
+          @editor-evt="editorEvt"
+          @mouse-evt="mouseEvt"
           ref="measurementsRef"
           position="bottom-left"
-          :mainFabOpts="measurementFabOptions1"
+          :mainFabOpts="measurementFabOptions"
           :offset="[20, 80]"
-          :editable="editable"
       >
       </vc-measurements>
-      <vc-datasource-geojson
-          ref="datasourceRef"
-          data="/cont_mmi.json"
-          @ready="onDatasourceReady"
-          :show="showGeojson"
-          stroke="red"
-          @click="onClicked"
-          :entities="entities"
-      ></vc-datasource-geojson>
-      <vc-datasource-custom name="epicenter" :entities="entities" @click="onClicked" :show="showEpicenter">
+      <vc-datasource-custom name="epicenter" :show="layerControl.showEpicenter">
         <vc-entity
             :position="[item.longitude,item.latitude, 0]"
             description="epicenter"
@@ -50,7 +73,7 @@
           <vc-graphics-point ref="point1" color="red" :pixelSize="2*item.magnitude"></vc-graphics-point>
         </vc-entity>
       </vc-datasource-custom>
-      <vc-datasource-custom name="intensity" @click="onClicked" :show="showIntensity">
+      <vc-datasource-custom name="intensity" :show="layerControl.showIntensity">
         <vc-entity
             :position="[earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude, 0]"
             :description="'震源位置:'+earthquakeInfoList[selectedEarthquakeIndex].latitude+','+earthquakeInfoList[selectedEarthquakeIndex].longitude+',震级:'+earthquakeInfoList[selectedEarthquakeIndex].magnitude"
@@ -59,7 +82,6 @@
           <vc-graphics-point ref="point1" color="red" :pixelSize="2*earthquakeInfoList[selectedEarthquakeIndex].magnitude"></vc-graphics-point>
         </vc-entity>
         <vc-entity
-            @click="onClicked"
             :position="[earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,0]"
             :description="'最外圈烈度:'+item.intensity"
             :id="'intensity'+item.intensity+'('+item.longRadius+','+item.shortRadius+')'"
@@ -68,99 +90,49 @@
           <vc-graphics-ellipse
               :semiMinorAxis="item.longRadius*1000"
               :semiMajorAxis="item.shortRadius*1000"
-              :outlineColor="[255, 70, 0, 125]"
               :material="[255, (10-item.intensity)*30, 0, 125]"
-              :outlineWidth="5"
               :rotation="item.rotation"
-              :fill="true"
-              :outline="true">
+              :fill="true">
           </vc-graphics-ellipse>
         </vc-entity>
       </vc-datasource-custom>
-<!--      <vc-provider-terrain-tianditu token="125c8a9d540afbc15a4feb04d9c2e8ef"></vc-provider-terrain-tianditu>-->
-      <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="20">
-        <vc-provider-imagery-tianditu mapStyle="cva_w" token="fb9aa5004fb3881361611a709aff4c59"></vc-provider-imagery-tianditu>
+<!--      <vc-terrain-provider-tianditu token="fd7029d3dff756b437af91d68aadc6bf"></vc-terrain-provider-tianditu>-->
+      <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="20">
+        <vc-imagery-provider-tianditu mapStyle="cva_w" token="fd7029d3dff756b437af91d68aadc6bf"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
-      <vc-layer-imagery :alpha="alpha" :brightness="brightness" :contrast="contrast" :sortOrder="10">
-        <vc-provider-imagery-tianditu :mapStyle="mapStyle" token="fb9aa5004fb3881361611a709aff4c59" ref="provider"></vc-provider-imagery-tianditu>
+      <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="10">
+        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="fd7029d3dff756b437af91d68aadc6bf" ref="provider"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
-
-<!--      <vc-primitive-tileset-->
-<!--          ref="primitive"-->
-<!--          url="/tileset/tileset.json"-->
-<!--          @readyPromise="onReadyPromise"-->
-<!--          @click="onClicked"-->
-<!--      >-->
-<!--      </vc-primitive-tileset>-->
-      <vc-navigation :offset="offset" @compass-evt="onNavigationEvt" :otherOpts="otherOpts" @zoom-evt="onNavigationEvt"></vc-navigation>
+      <vc-navigation :offset="navigationConfig.offset" :otherOpts="navigationConfig.otherOpts"></vc-navigation>
       <vc-ajax-bar></vc-ajax-bar>
       <!-- hyc：增加图标位置 -->
       <vc-collection-primitive
-        @click="onClicked"
-        :show="showHospital"
-        ref="collectionRef"
+        :show="layerControl.showHospital"
       >
         <vc-collection-billboard
-          :billboards="billboards1"
+          :billboards="hospitalBillboards"
         ></vc-collection-billboard>
       </vc-collection-primitive>
       <!--        hyc：增加椭圆显示位置-->
-      <vc-entity ref="entityCircleOnClick" :position="[longTemp, latiTemp]" description="您所点击的位置所表示的区域">
+      <vc-entity :position="[longTemp, latiTemp]" description="您所点击的位置所表示的区域">
         <vc-graphics-ellipse :semiMinorAxis="50.0" :semiMajorAxis="50.0" :material="[255, 0, 0, 125]"></vc-graphics-ellipse>
       </vc-entity>
       <!--hyc:消防队位置-->
       <vc-collection-primitive
-          @click="onClicked"
-          :show="showFireCenter"
-          ref="collectionRef"
+          :show="layerControl.showFireCenter"
       >
         <vc-collection-billboard
-            :billboards="billboardsFireCenter"
+            :billboards="fireCenterBillboards"
         ></vc-collection-billboard>
-        <vc-collection-label @click="onClicked" ref="collectionRef" :labels="fireWeight" @mouseout="onMouseout" @mouseover="onMouseover">
+        <vc-collection-label :labels="fireWeight" @mouseout="onMouseout" @mouseover="onMouseover">
         </vc-collection-label>
       </vc-collection-primitive>
     </vc-viewer>
-    <el-row class="demo-toolbar">
-      <el-select v-model="mapStyle" placeholder="请选择" class="toolbar-item">
-        <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"> </el-option>
-      </el-select>
-      <el-popover ref="controlVisible" placement="bottom" trigger="click">
-        <template #reference>
-          <el-button type="default" icon="el-icon-menu" round class="toolbar-item">图层控制</el-button>
-        </template>
-        <el-checkbox v-model="showGeojson" label="geojson"></el-checkbox><br/>
-        <el-checkbox v-model="showIntensity" label="烈度图"></el-checkbox><br/>
-        <el-checkbox v-model="showEpicenter" label="震源"></el-checkbox>
-        <el-checkbox v-model="showHospital" label="显示医院"></el-checkbox>
-        <el-checkbox v-model="showFireCenter" label="显示救援物资分配"></el-checkbox>
-      </el-popover>
-      <el-button type="primary" round
-                 v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,80000)"
-                 icon="el-icon-s-flag"
-                 class="toolbar-item">跳转到所选震区</el-button>
-      <EarthquakeSelect
-          :earthquakeInfoList="earthquakeInfoList"
-          :selectedEarthquakeIndex="selectedEarthquakeIndex"
-          @changeSelect="selectEarthquakeIndex"
-          @updateList="getEarthquakeList"
-          @newList="newEarthquakeList"
-      ></EarthquakeSelect>
-      <EstimateEarthquake :earthquake="earthquakeInfoList[selectedEarthquakeIndex]"></EstimateEarthquake>
-      <AddEarthquake></AddEarthquake>
-      <!-- hyc2 -->
-      <el-button
-        type="primary"
-        round
-        @click="getPositionRoad"
-        class="toolbar-item"
-        >开始路径规划</el-button>
-    </el-row>
   </el-row>
 </template>
 
 <script>
-import {getCurrentInstance, reactive, ref } from "vue";
+import {reactive, ref } from "vue";
 import DetailBox from "../components/DetailBox";
 import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
@@ -173,124 +145,13 @@ export default {
     AddEarthquake,
     EstimateEarthquake
   },
-  setup() {
-    // hyc:数据初始化
-    const collectionRef = ref(null);
-    const billboards1 = ref([]);
-    const billboardsFireCenter=ref([]);
-    const showHospital = ref(false);
-    const showFireCenter=ref(false);
-    const entityCircleOnClick = ref(null)
-    // state
-    const instance = getCurrentInstance()
-    const provider = ref(null)
-    const alpha = ref(1)
-    const brightness = ref(1)
-    const contrast = ref(1)
-    const options = [
-      {
-        value: 'img_c',
-        label: '全球影像地图服务(经纬度)'
-      },
-      {
-        value: 'img_w',
-        label: '全球影像地图服务(墨卡托)'
-      },
-      {
-        value: 'vec_c',
-        label: '全球矢量地图服务(经纬度)'
-      },
-      {
-        value: 'vec_w',
-        label: '全球矢量地图服务(墨卡托)'
-      },
-      {
-        value: 'ter_c',
-        label: '全球地形晕渲服务(经纬度)'
-      },
-      {
-        value: 'ter_w',
-        label: '全球地形晕渲服务(墨卡托)'
-      },
-      {
-        value: 'ibo_c',
-        label: '全球境界(经纬度)'
-      },
-      {
-        value: 'ibo_w',
-        label: '全球境界(墨卡托)'
-      }
-    ]
-    const datasourceRef = ref(null)
-    const mapStyle = ref('img_w')
-    const entities = reactive([])
-
-    const onClicked = e => {
-    }
-    const onDatasourceReady = ({ Cesium, viewer, cesiumObject }) => {
-
-    }
-    const unload = () => {
-      provider.value.unload()
-    }
-    const reload = () => {
-      provider.value.reload()
-    }
-    const load = () => {
-      provider.value.load()
-    }
-
-    const onMouseover = e => {
-      console.log(e)
-      if (e.cesiumObject instanceof Cesium.Label) {
-        this.scale = 1.5 // or e.cesiumObject.scale = 1.5
-        e.pickedFeature.primitive.scale = 1.5
-      } else if (e.cesiumObject instanceof Cesium.LabelCollection) {
-        e.pickedFeature.primitive.scale = 1.5
-      }
-    }
-
-    const onMouseout = e => {
-      console.log(e)
-      if (e.cesiumObject instanceof Cesium.Label) {
-        this.scale = 1 // or e.cesiumObject.scale = 1
-      } else if (e.cesiumObject instanceof Cesium.LabelCollection) {
-        e.pickedFeature.primitive.scale = 1
-      }
-    }
-
-
-    return {
-      provider,
-      unload,
-      reload,
-      load,
-      alpha,
-      brightness,
-      contrast,
-      options,
-      mapStyle,
-      onClicked,
-      onDatasourceReady,
-      datasourceRef,
-      entities,
-      // hyc
-      collectionRef,
-      billboards1,
-      billboardsFireCenter,
-      showHospital,
-      showFireCenter,
-      entityCircleOnClick,
-      onMouseout,
-      onMouseover,
-    };
-  },
   data() {
     return {
+      //data
       fireWeight:[],
-      showDetail: false,
-      detailClass: 0,
-      detailIndex: 0,
+      hospitalBillboards:[],
+      fireCenterBillboards:[],
+      hospitalList: [],
       //earthquakeInfo
       earthquakeInfoList:[{
         earthquakeId:1,
@@ -310,29 +171,61 @@ export default {
         }]
       }],
       selectedEarthquakeIndex:0,
-      quickEarthquakeIndex:0,
-      //mesure
-      measurementFabOptions1: {
+      //detailBox
+      detailBox:{
+        showDetail: false,
+        detailClass: 0,
+        detailIndex: 0,
+        quickEarthquakeIndex:0,
+        showButton: true
+      },
+      //measure
+      measurementFabOptions: {
         direction: 'right'
       },
-      editable: false,
-      //viwer
-      loading: true,
-      animation: false,
-      timeline: false,
-      baseLayerPicker: false,
-      fullscreenButton: false,
-      infoBox: false,
-      showCredit: false,
-      fullscreenElement: document.body,
-      offset: [10, 25],
-      otherOpts: {
-        offset: [0, 32],
-        position: 'bottom-right'
+      //viewer
+      viewerConfig:{
+        animation: false,
+        timeline: false,
+        baseLayerPicker: false,
+        fullscreenButton: false,
+        infoBox: false,
+        showCredit: false,
+        fullscreenElement: document.body,
       },
-      showIntensity: true,
-      showGeojson: false,
-      showEpicenter: false,
+      //imagery-provider
+      imageryConfig:{
+        alpha:1,
+        brightness:1,
+        contrast:1,
+        mapStyle:'img_w',
+        options: [
+          {value: 'img_c', label: '全球影像地图服务(经纬度)'},
+          {value: 'img_w', label: '全球影像地图服务(墨卡托)'},
+          {value: 'vec_c', label: '全球矢量地图服务(经纬度)'},
+          {value: 'vec_w', label: '全球矢量地图服务(墨卡托)'},
+          {value: 'ter_c', label: '全球地形晕渲服务(经纬度)'},
+          {value: 'ter_w', label: '全球地形晕渲服务(墨卡托)'},
+          {value: 'ibo_c', label: '全球境界(经纬度)'},
+          {value: 'ibo_w', label: '全球境界(墨卡托)'}
+        ],
+      },
+      //navigation
+      navigationConfig:{
+        offset: [10, 25],
+        otherOpts: {
+          offset: [0, 32],
+          position: 'bottom-right'
+        },
+      },
+      //layerControl
+      layerControl:{
+        visible:false,
+        showIntensity: true,
+        showEpicenter: true,
+        showHospital: false,
+        showFireCenter: false,
+      },
       // hyc2
       num: 0,
       SuccessClick: false,
@@ -345,18 +238,17 @@ export default {
       endLon: 0.0,
       endLat: 0.0,
       endHei: 0.0,
-      hospitalList: []
     };
   },
   watch: {
     timeline(val) {
-      this.otherOpts.offset = val ? [0, 30] : this.fullscreenButton ? [30, 5] : [0, 5]
+      this.navigationConfig.otherOpts.offset = val ? [0, 30] : this.fullscreenButton ? [30, 5] : [0, 5]
     },
     fullscreenButton(val) {
       if (!this.timeline && !val) {
-        this.otherOpts.offset = [0, 5]
+        this.navigationConfig.otherOpts.offset = [0, 5]
       } else if (!this.timeline && val) {
-        this.otherOpts.offset = [30, 5]
+        this.navigationConfig.otherOpts.offset = [30, 5]
       }
     }
   },
@@ -367,29 +259,14 @@ export default {
     this.$refs.vcViewer.createPromise.then(({ Cesium, viewer }) => {
       console.log('viewer is loaded.')
       viewer.scene.globe.depthTestAgainstTerrain = false;
-      // let iframe = document.getElementsByClassName('cesium-infoBox-iframe')[0]
-      // iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms')
-      // iframe.setAttribute('src', '')
-      // let handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      // let that=this;
-      // handler.setInputAction(function (event) {
-      //   that.getPosition(viewer,event);
-      // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-      // hyc2
-      window.earth = viewer;
-      //定义canvas屏幕点击事件
-      // var handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      // let that = this;
-      // handler.setInputAction(function (event) {
-      //   that.getPosition(viewer, event);
-      // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     });
   },
   methods: {
-    newEarthquakeList(list){
+    //update earthquake list
+    updateEarthquakeList(list){
       this.earthquakeInfoList=list
     },
+    //get earthquake list
     getEarthquakeList(){
       let that=this;
       that.$axios.get("earthquakeInfo/getAllEarthquake")
@@ -399,78 +276,11 @@ export default {
             that.selectedEarthquakeIndex=0;
           })
     },
+    //change selected earthquake by index
     selectEarthquakeIndex(index){
       this.selectedEarthquakeIndex=index;
-      this.earthquakeSelectVisible=false;
     },
-    getPosition(viewer, event) {
-      console.log(event.position)
-      let position = viewer.scene.pickPosition(event.position);
-      console.log(position)
-      let cartographic = Cesium.Cartographic.fromCartesian(position);
-      console.log(cartographic)
-      this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
-      this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
-      this.heiTemp = cartographic.height; //高度
-      this.num += 1;
-      console.log("经纬度：" + this.longTemp, this.latiTemp, this.heiTemp);
-    },
-    switchShow(){
-      this.showIntensity=!this.showIntensity
-    },
-    onReadyPromise(tileset, viewer){
-      const cartographic = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center)
-      const surface = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, cartographic.height)
-      const offset = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, 0)
-      const translation = Cesium.Cartesian3.subtract(offset, surface, new Cesium.Cartesian3())
-      tileset.modelMatrix = Cesium.Matrix4.fromTranslation(translation)
-    },
-    measureEvt(e, viewer) {
-      console.log(e)
-      const restoreCursor = getComputedStyle(viewer.canvas).cursor
-      if (e.finished) {
-        this.drawing = false
-        if (e.type === 'move') {
-          viewer.canvas.setAttribute('style', `cursor: ${this.restoreCursorMove}`)
-        }
-      } else {
-        this.drawing = true
-        if (e.type === 'move') {
-          viewer.canvas.setAttribute('style', 'cursor: move')
-        }
-        if (e.type === 'new') {
-          viewer.canvas.setAttribute('style', 'cursor: crosshair')
-        }
-      }
-    },
-    activeEvt(e, viewer) {
-      console.log(e)
-      viewer.canvas.setAttribute('style', `cursor: ${e.isActive ? 'crosshair' : 'auto'}`)
-      if (!e.isActive) {
-        this.drawing = false
-        this.restoreCursorMove = 'auto'
-      }
-    },
-    editorEvt(e, viewer) {
-      console.log(e)
-      if (e.type === 'move') {
-        const restoreCursor = getComputedStyle(viewer.canvas).cursor
-        viewer.canvas.setAttribute('style', 'cursor: move')
-        this.drawing = true
-      }
-    },
-    mouseEvt(e, viewer) {
-      console.log(e)
-      const restoreCursor = getComputedStyle(viewer.canvas).cursor
-      if (!this.drawing) {
-        if (e.type === 'onmouseover') {
-          this.restoreCursorMove = restoreCursor
-          viewer.canvas.setAttribute('style', 'cursor: pointer')
-        } else {
-          viewer.canvas.setAttribute('style', `cursor: ${this.restoreCursorMove || 'auto'}`)
-        }
-      }
-    },
+    //change location
     cameraTo(lat,lon,height){
       let viewer=this.$refs.vcViewer.getCesiumObject();
       viewer.camera.flyTo(
@@ -484,68 +294,63 @@ export default {
           }
       )
     },
+    //event when mouse pick an entity or a position
     pickEvt(e){
-      this.$refs.controlVisible.showPopper = false;
+      this.layerControl.visible=false
       try{
         if(e._id==='__Vc__Pick__Location__')
         {
           // console.log('pickEvt',e)
           let cartographic = Cesium.Cartographic.fromCartesian(e._position._value);
-          this.longTemp = Cesium.Math.toDegrees(cartographic.longitude); //经度
-          this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude); //纬度
-          this.heiTemp = cartographic.height; //高度
+          this.longTemp = Cesium.Math.toDegrees(cartographic.longitude);
+          this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude);
+          this.heiTemp = cartographic.height;
           this.num++
           console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
         }
-      }
-      catch (e) {
-
-      }
-      try{
         let kind=e.id.split("_")[0]
         let index=0
         if(kind==='epicenter')
         {
           index=parseInt(e.id.split("_")[1])
-          this.showDetail=true
-          this.detailClass=1
-          this.detailIndex=index
-          this.quickEarthquakeIndex=index
+          this.detailBox.showDetail=true
+          this.detailBox.detailClass=1
+          this.detailBox.detailIndex=index
+          this.detailBox.quickEarthquakeIndex=index
         }
         else if(kind==='hospital')
         {
           index=parseInt(e.id.split("_")[1])
-          this.showDetail=true
-          this.detailClass=2
-          this.detailIndex=index
-          this.quickEarthquakeIndex=index
+          this.detailBox.showDetail=true
+          this.detailBox.detailClass=2
+          this.detailBox.detailIndex=index
+          this.detailBox.quickEarthquakeIndex=index
         }
         else
         {
-          this.showDetail=false
+          this.detailBox.showDetail=false
         }
       }
       catch (err) {
-        this.showDetail=false
+        this.detailBox.showDetail=false
       }
     },
     onViewerReady({ Cesium, viewer }) {
-      this.loading = false;
       // hyc
       let that = this;
       this.$axios.get("/findAllHospital").then((res) => {
         console.log(res.data.length);
         this.hospitalList=res.data
         for (let i = 0; i < res.data.length; i++) {
-          let billboard1 = {};
-          billboard1.position = {
+          let hospitalBillboard = {};
+          hospitalBillboard.position = {
             lng: res.data[i].lon,
             lat: res.data[i].lat,
           };
-          billboard1.id='hospital_'+i
-          billboard1.image = "/Hospital.png";
-          billboard1.scale = 0.1;
-          that.billboards1.push(billboard1);
+          hospitalBillboard.id='hospital_'+i
+          hospitalBillboard.image = "https://file.peteralbus.com/assets/cesium/img/Hospital.png";
+          hospitalBillboard.scale = 0.1;
+          that.hospitalBillboards.push(hospitalBillboard);
         }
       });
       this.$axios.get("/calculateWeight").then((res)=>{
@@ -556,35 +361,20 @@ export default {
             lng:res.data[i].fireLon,
             lat:res.data[i].fireLat,
           }
-          billboard.image="/fireCenter.png";
+          billboard.image="https://file.peteralbus.com/assets/cesium/img/fireCenter.png";
           billboard.scale = 0.1;
           billboard.weight=1/(1-res.data[i].fireCenterWeight);
           sum+=billboard.weight;
-          that.billboardsFireCenter.push(billboard);
+          that.fireCenterBillboards.push(billboard);
         }
-        console.log('that.billboardsFireCenter',that.billboardsFireCenter);
-        for(let i=0;i<that.billboardsFireCenter.length;i++){
+        for(let i=0;i<that.fireCenterBillboards.length;i++){
           let fireWeight1={};
-          fireWeight1.position=that.billboardsFireCenter[i].position;
-          fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.billboardsFireCenter[i].weight/sum)*1000).toString()+"个";
+          fireWeight1.position=that.fireCenterBillboards[i].position;
+          fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].weight/sum)*1000).toString()+"个";
           that.fireWeight.push(fireWeight1);
         }
       })
     },
-    onCesiumReady (e) {
-      console.log(e)
-    },
-    onNavigationEvt(e) {
-      console.log(e)
-    },
-    onEntityClick(e) {
-      console.log('onEntityClick',e)
-    },
-    // onLeftClick(e) {
-    //   console.log('onLeftClick',e)
-    //
-    // }
-
     // hyc2
     // startFindRoad(){
     //   let that=this;
@@ -706,7 +496,8 @@ export default {
             }
           }
           var cartesians = that.lnglatArrToCartesianArr(arr);
-          var line = window.earth.entities.add({
+          let viewer=this.$refs.vcViewer.getCesiumObject();
+          var line = viewer.entities.add({
             polyline: {
               positions: cartesians,
               clampToGround: true,
@@ -717,6 +508,147 @@ export default {
           this.moveOnRoute(line);
         });
     },
+    moveOnRoute(lineEntity) {
+      console.log("已进入line2");
+      var qicheModel = null;
+      if (!lineEntity) return;
+      var positions = lineEntity.polyline.positions.getValue();
+      console.log("positions", positions);
+      if (!positions) return;
+      var allDis = 0;
+      for (var index = 0; index < positions.length - 1; index++) {
+        var dis = Cesium.Cartesian3.distance(
+            positions[index],
+            positions[index + 1]
+        );
+        allDis += dis;
+      }
+      var playTime = 100;
+      var v = allDis / playTime;
+      let viewer=this.$refs.vcViewer.getCesiumObject();
+      var startTime = viewer.clock.currentTime;
+      var endTime = Cesium.JulianDate.addSeconds(
+          startTime,
+          playTime,
+          new Cesium.JulianDate()
+      );
+      var property = new Cesium.SampledPositionProperty();
+      var t = 0;
+      for (var i = 1; i < positions.length; i++) {
+        if (i == 1) {
+          property.addSample(startTime, positions[0]);
+        }
+        var dis = Cesium.Cartesian3.distance(positions[i], positions[i - 1]);
+        var time = dis / v + t;
+        var julianDate = Cesium.JulianDate.addSeconds(
+            startTime,
+            time,
+            new Cesium.JulianDate()
+        );
+        property.addSample(julianDate, positions[i]);
+        t += dis / v;
+      }
+      if (qicheModel) {
+        window.viewer.entities.remove(qicheModel);
+        qicheModel = null;
+      }
+      qicheModel = viewer.entities.add({
+        position: property,
+        orientation: new Cesium.VelocityOrientationProperty(property),
+        model: {
+          uri: "https://file.peteralbus.com/assets/cesium/glb/GroundVehicle.glb",
+          scale: 5,
+        },
+      });
+      viewer.clock.currentTime = startTime;
+      viewer.clock.multiplier = 1;
+      viewer.clock.shouldAnimate = true;
+      viewer.clock.stopTime = endTime;
+    },
+    onMouseover(e){
+      if (e.cesiumObject instanceof Cesium.Label) {
+        this.scale = 1.5 // or e.cesiumObject.scale = 1.5
+        e.pickedFeature.primitive.scale = 1.5
+      } else if (e.cesiumObject instanceof Cesium.LabelCollection) {
+        e.pickedFeature.primitive.scale = 1.5
+      }
+    },
+
+    onMouseout(e){
+      if (e.cesiumObject instanceof Cesium.Label) {
+        this.scale = 1 // or e.cesiumObject.scale = 1
+      } else if (e.cesiumObject instanceof Cesium.LabelCollection) {
+        e.pickedFeature.primitive.scale = 1
+      }
+    },
+
+    //量算工具
+    drawEvt(e, viewer) {
+      console.log(e)
+      const restoreCursor = getComputedStyle(viewer.canvas).cursor
+      if (e.finished) {
+        this.drawing = false
+        if (e.type === 'move') {
+          viewer.canvas.setAttribute('style', `cursor: ${this.restoreCursorMove}`)
+        }
+      } else {
+        this.drawing = true
+        if (e.type === 'move') {
+          viewer.canvas.setAttribute('style', 'cursor: move')
+        }
+        if (e.type === 'new') {
+          viewer.canvas.setAttribute('style', 'cursor: crosshair')
+        }
+      }
+    },
+    measureEvt(e, viewer) {
+      console.log(e)
+      const restoreCursor = getComputedStyle(viewer.canvas).cursor
+      if (e.finished) {
+        this.drawing = false
+        if (e.type === 'move') {
+          viewer.canvas.setAttribute('style', `cursor: ${this.restoreCursorMove}`)
+        }
+      } else {
+        this.drawing = true
+        if (e.type === 'move') {
+          viewer.canvas.setAttribute('style', 'cursor: move')
+        }
+        if (e.type === 'new') {
+          viewer.canvas.setAttribute('style', 'cursor: crosshair')
+        }
+      }
+    },
+    activeEvt(e, viewer) {
+      console.log(e)
+      viewer.canvas.setAttribute('style', `cursor: ${e.isActive ? 'crosshair' : 'auto'}`)
+      if (!e.isActive) {
+        this.drawing = false
+        this.restoreCursorMove = 'auto'
+      }
+    },
+    editorEvt(e, viewer) {
+      console.log(e)
+      if (e.type === 'move') {
+        const restoreCursor = getComputedStyle(viewer.canvas).cursor
+        viewer.canvas.setAttribute('style', 'cursor: move')
+        this.drawing = true
+      }
+    },
+    mouseEvt(e, viewer) {
+      console.log(e)
+      const restoreCursor = getComputedStyle(viewer.canvas).cursor
+      if (!this.drawing) {
+        if (e.type === 'onmouseover') {
+          this.restoreCursorMove = restoreCursor
+          viewer.canvas.setAttribute('style', 'cursor: pointer')
+        } else {
+          viewer.canvas.setAttribute('style', `cursor: ${this.restoreCursorMove || 'auto'}`)
+        }
+      }
+    },
+
+    //坐标转换
     transformWD(lng, lat) {
       var PI = 3.1415926535897932384626;
       var ret =
@@ -843,112 +775,56 @@ export default {
       }
       return arr;
     },
-    moveOnRoute(lineEntity) {
-      console.log("已进入line2");
-      var qicheModel = null;
-      if (!lineEntity) return;
-      var positions = lineEntity.polyline.positions.getValue();
-      console.log("positions", positions);
-      if (!positions) return;
-      var allDis = 0;
-      for (var index = 0; index < positions.length - 1; index++) {
-        var dis = Cesium.Cartesian3.distance(
-          positions[index],
-          positions[index + 1]
-        );
-        allDis += dis;
-      }
-      var playTime = 100;
-      var v = allDis / playTime;
-      var startTime = window.earth.clock.currentTime;
-      var endTime = Cesium.JulianDate.addSeconds(
-        startTime,
-        playTime,
-        new Cesium.JulianDate()
-      );
-      var property = new Cesium.SampledPositionProperty();
-      var t = 0;
-      for (var i = 1; i < positions.length; i++) {
-        if (i == 1) {
-          property.addSample(startTime, positions[0]);
-        }
-        var dis = Cesium.Cartesian3.distance(positions[i], positions[i - 1]);
-        var time = dis / v + t;
-        var julianDate = Cesium.JulianDate.addSeconds(
-          startTime,
-          time,
-          new Cesium.JulianDate()
-        );
-        property.addSample(julianDate, positions[i]);
-        t += dis / v;
-      }
-      if (qicheModel) {
-        window.viewer.entities.remove(qicheModel);
-        qicheModel = null;
-      }
-      qicheModel = window.earth.entities.add({
-        position: property,
-        orientation: new Cesium.VelocityOrientationProperty(property),
-        model: {
-          uri: "/GroundVehicle.glb",
-          scale: 5,
-        },
-      });
-      window.earth.clock.currentTime = startTime;
-      window.earth.clock.multiplier = 1;
-      window.earth.clock.shouldAnimate = true;
-      window.earth.clock.stopTime = endTime;
-    },
   },
   computed:{
     detailInfo: function (){
       let info=[]
-      if(this.detailClass===1)
+      if(this.detailBox.detailClass===1)
       {
         info=[
           {
             key:'地震名称',
-            value: this.earthquakeInfoList[this.detailIndex].earthquakeName,
+            value: this.earthquakeInfoList[this.detailBox.detailIndex].earthquakeName,
           },
           {
             key:'震级',
-            value: this.earthquakeInfoList[this.detailIndex].magnitude,
+            value: this.earthquakeInfoList[this.detailBox.detailIndex].magnitude,
           },
           {
             key:'震源经纬度',
-            value: this.earthquakeInfoList[this.detailIndex].longitude+','+this.earthquakeInfoList[this.detailIndex].latitude,
+            value: this.earthquakeInfoList[this.detailBox.detailIndex].longitude+','+this.earthquakeInfoList[this.detailBox.detailIndex].latitude,
           },
           {
             key:'震中烈度',
-            value: this.earthquakeInfoList[this.detailIndex].highIntensity,
+            value: this.earthquakeInfoList[this.detailBox.detailIndex].highIntensity,
           },
           {
             key:'发生时间',
-            value: this.earthquakeInfoList[this.detailIndex].earthquakeTime,
+            value: this.earthquakeInfoList[this.detailBox.detailIndex].earthquakeTime,
           },]
       }
-      else if(this.detailClass===2)
+      else if(this.detailBox.detailClass===2)
       {
         info=[
           {
             key:'医院名称',
-            value: this.hospitalList[this.detailIndex].name,
+            value: this.hospitalList[this.detailBox.detailIndex].name,
           },
           {
             key:'地址',
-            value: this.hospitalList[this.detailIndex].address,
+            value: this.hospitalList[this.detailBox.detailIndex].address,
           },
           {
             key:'经纬度',
-            value: this.hospitalList[this.detailIndex].lon+','+this.hospitalList[this.detailIndex].lat,
+            value: this.hospitalList[this.detailBox.detailIndex].lon+','+this.hospitalList[this.detailBox.detailIndex].lat,
           },
           {
             key:'所在省市',
-            value: this.hospitalList[this.detailIndex].pname+this.hospitalList[this.detailIndex].cityname,
+            value: this.hospitalList[this.detailBox.detailIndex].pname+this.hospitalList[this.detailBox.detailIndex].cityname,
           },
           {
             key:'类型',
-            value: this.hospitalList[this.detailIndex].type,
+            value: this.hospitalList[this.detailBox.detailIndex].type,
           },]
       }
       return info
@@ -958,7 +834,7 @@ export default {
 </script>
 
 <style scoped>
-.demo-toolbar {
+.toolbar {
   position: absolute;
   left: 1%;
   top: 1%;
@@ -972,7 +848,7 @@ export default {
   margin: 5px;
 }
 
-.demo-viewer{
+.viewer{
 
   width:100%;
   height:100vh;
