@@ -137,6 +137,7 @@ import DetailBox from "../components/DetailBox";
 import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
 import EstimateEarthquake from "../components/EstimateEarthquake";
+import {cartesianToLnglat, gcj2wgs, lnglatArrToCartesianArr, wgs2gcj} from "../assets/coordinateConversion";
 export default {
   name: "Cesium",
   components: {
@@ -459,54 +460,53 @@ export default {
     },
     howRes(start, end) {
       if (!start || !end) return;
-      var startp = this.cartesianToLnglat(start, true);
-      var endP = this.cartesianToLnglat(end, true);
+      var startp = cartesianToLnglat(start, true);
+      var endP = cartesianToLnglat(end, true);
       var search = this.searchRoute([startp[0], startp[1]], [endP[0], endP[1]]);
     },
     searchRoute(startP, endP) {
-      console.log("1111111111111111", startP, endP);
-      var startP = this.wgs2gcj(startP);
-      var endP = this.wgs2gcj(endP);
+      var startP = wgs2gcj(startP);
+      var endP = wgs2gcj(endP);
       let that = this;
       this.$axios
-        .get("http://restapi.amap.com/v3/direction/driving", {
-          params: {
-            output: "json",
-            extensions: "all",
-            key: "e21feddaeef263e2506376a2ddbb994e", // https://lbs.amap.com/api/webservice/guide/api/direction
-            origin: startP[0] + "," + startP[1],
-            destination: endP[0] + "," + endP[1],
-            strategy: 11 || 10,
-          },
-        })
-        .then((res) => {
-          // that.addRouteLine(res.data.route.paths[0].steps);
-          console.log("res的值为", res);
-          let steps = res.data.route.paths[0].steps;
-          for (var i = 0; i < steps.length; i++) {
-            var item = steps[i];
-            var positionStr = item.polyline;
-            var strArr = positionStr.split(";");
-            var arr = [];
-            for (var z = 0; z < strArr.length; z++) {
-              var item2 = strArr[z];
-              var strArr2 = item2.split(",");
-              var p = that.gcj2wgs(strArr2);
-              arr.push(p);
-            }
-          }
-          var cartesians = that.lnglatArrToCartesianArr(arr);
-          let viewer=this.$refs.vcViewer.getCesiumObject();
-          var line = viewer.entities.add({
-            polyline: {
-              positions: cartesians,
-              clampToGround: true,
-              material: Cesium.Color.RED.withAlpha(1),
-              width: 3,
+          .get("http://restapi.amap.com/v3/direction/driving", {
+            params: {
+              output: "json",
+              extensions: "all",
+              key: "e21feddaeef263e2506376a2ddbb994e", // https://lbs.amap.com/api/webservice/guide/api/direction
+              origin: startP[0] + "," + startP[1],
+              destination: endP[0] + "," + endP[1],
+              strategy: 11 || 10,
             },
+          })
+          .then((res) => {
+            // that.addRouteLine(res.data.route.paths[0].steps);
+            console.log("res的值为", res);
+            let steps = res.data.route.paths[0].steps;
+            let arr = [];
+            for (var i = 0; i < steps.length; i++) {
+              var item = steps[i];
+              var positionStr = item.polyline;
+              var strArr = positionStr.split(";");
+              for (var z = 0; z < strArr.length; z++) {
+                var item2 = strArr[z];
+                var strArr2 = item2.split(",");
+                var p = gcj2wgs(strArr2);
+                arr.push(p);
+              }
+            }
+            var cartesians = lnglatArrToCartesianArr(arr);
+            let viewer=this.$refs.vcViewer.getCesiumObject();
+            var line = viewer.entities.add({
+              polyline: {
+                positions: cartesians,
+                clampToGround: true,
+                material: Cesium.Color.RED.withAlpha(1),
+                width: 3,
+              },
+            });
+            this.moveOnRoute(line);
           });
-          this.moveOnRoute(line);
-        });
     },
     moveOnRoute(lineEntity) {
       console.log("已进入line2");
@@ -549,7 +549,7 @@ export default {
         t += dis / v;
       }
       if (qicheModel) {
-        window.viewer.entities.remove(qicheModel);
+        viewer.entities.remove(qicheModel);
         qicheModel = null;
       }
       qicheModel = viewer.entities.add({
@@ -646,134 +646,6 @@ export default {
           viewer.canvas.setAttribute('style', `cursor: ${this.restoreCursorMove || 'auto'}`)
         }
       }
-    },
-
-    //坐标转换
-    transformWD(lng, lat) {
-      var PI = 3.1415926535897932384626;
-      var ret =
-        -100.0 +
-        2.0 * lng +
-        3.0 * lat +
-        0.2 * lat * lat +
-        0.1 * lng * lat +
-        0.2 * Math.sqrt(Math.abs(lng));
-      ret +=
-        ((20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) *
-          2.0) /
-        3.0;
-      ret +=
-        ((20.0 * Math.sin(lat * PI) + 40.0 * Math.sin((lat / 3.0) * PI)) *
-          2.0) /
-        3.0;
-      ret +=
-        ((160.0 * Math.sin((lat / 12.0) * PI) +
-          320 * Math.sin((lat * PI) / 30.0)) *
-          2.0) /
-        3.0;
-      return ret;
-    },
-    transformJD(lng, lat) {
-      var PI = 3.1415926535897932384626;
-      var ret =
-        300.0 +
-        lng +
-        2.0 * lat +
-        0.1 * lng * lng +
-        0.1 * lng * lat +
-        0.1 * Math.sqrt(Math.abs(lng));
-      ret +=
-        ((20.0 * Math.sin(6.0 * lng * PI) + 20.0 * Math.sin(2.0 * lng * PI)) *
-          2.0) /
-        3.0;
-      ret +=
-        ((20.0 * Math.sin(lng * PI) + 40.0 * Math.sin((lng / 3.0) * PI)) *
-          2.0) /
-        3.0;
-      ret +=
-        ((150.0 * Math.sin((lng / 12.0) * PI) +
-          300.0 * Math.sin((lng / 30.0) * PI)) *
-          2.0) /
-        3.0;
-      return ret;
-    },
-    wgs2gcj(arrdata) {
-      var x_PI = (3.14159265358979324 * 3000.0) / 180.0;
-      var PI = 3.1415926535897932384626;
-      var a = 6378245.0;
-      var ee = 0.00669342162296594323;
-      var lng = Number(arrdata[0]);
-      var lat = Number(arrdata[1]);
-      var dlat = this.transformWD(lng - 105.0, lat - 35.0);
-      var dlng = this.transformJD(lng - 105.0, lat - 35.0);
-      var radlat = (lat / 180.0) * PI;
-      var magic = Math.sin(radlat);
-      magic = 1 - ee * magic * magic;
-      var sqrtmagic = Math.sqrt(magic);
-      dlat = (dlat * 180.0) / (((a * (1 - ee)) / (magic * sqrtmagic)) * PI);
-      dlng = (dlng * 180.0) / ((a / sqrtmagic) * Math.cos(radlat) * PI);
-      var mglat = lat + dlat;
-      var mglng = lng + dlng;
-
-      mglng = Number(mglng.toFixed(6));
-      mglat = Number(mglat.toFixed(6));
-      return [mglng, mglat];
-    },
-
-    gcj2wgs(arrdata) {
-      var x_PI = (3.14159265358979324 * 3000.0) / 180.0;
-      var PI = 3.1415926535897932384626;
-      var a = 6378245.0;
-      var ee = 0.00669342162296594323;
-      var lng = Number(arrdata[0]);
-      var lat = Number(arrdata[1]);
-      var dlat = this.transformWD(lng - 105.0, lat - 35.0);
-      var dlng = this.transformJD(lng - 105.0, lat - 35.0);
-      var radlat = (lat / 180.0) * PI;
-      var magic = Math.sin(radlat);
-      magic = 1 - ee * magic * magic;
-      var sqrtmagic = Math.sqrt(magic);
-      dlat = (dlat * 180.0) / (((a * (1 - ee)) / (magic * sqrtmagic)) * PI);
-      dlng = (dlng * 180.0) / ((a / sqrtmagic) * Math.cos(radlat) * PI);
-
-      var mglat = lat + dlat;
-      var mglng = lng + dlng;
-
-      var jd = lng * 2 - mglng;
-      var wd = lat * 2 - mglat;
-
-      jd = Number(jd.toFixed(6));
-      wd = Number(wd.toFixed(6));
-      return [jd, wd];
-    },
-    cartesianToLnglat(cartesian, isToWgs84) {
-      if (isToWgs84) {
-        var lat = cartesian.latitude;
-        var lng = cartesian.longitude;
-        var hei = cartesian.height;
-        console.log("1234555", cartesian, "9999", lat, lng, hei);
-        return [lng, lat, hei];
-      } else {
-      }
-    },
-    // 经纬度转世界坐标 [101,40]
-    lnglatToCartesian(lnglat) {
-      if (!lnglat) return null;
-      return Cesium.Cartesian3.fromDegrees(
-        lnglat[0],
-        lnglat[1],
-        lnglat[2] || 0
-      );
-    },
-
-    lnglatArrToCartesianArr(lnglatArr) {
-      if (!lnglatArr) return [];
-      var arr = [];
-      var that = this;
-      for (var i = 0; i < lnglatArr.length; i++) {
-        arr.push(that.lnglatToCartesian(lnglatArr[i]));
-      }
-      return arr;
     },
   },
   computed:{

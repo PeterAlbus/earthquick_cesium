@@ -55,8 +55,8 @@ function wgs2gcj(arrdata) {
     var ee = 0.00669342162296594323;
     var lng = Number(arrdata[0]);
     var lat = Number(arrdata[1]);
-    var dlat = this.transformWD(lng - 105.0, lat - 35.0);
-    var dlng = this.transformJD(lng - 105.0, lat - 35.0);
+    var dlat = transformWD(lng - 105.0, lat - 35.0);
+    var dlng = transformJD(lng - 105.0, lat - 35.0);
     var radlat = (lat / 180.0) * PI;
     var magic = Math.sin(radlat);
     magic = 1 - ee * magic * magic;
@@ -78,8 +78,8 @@ function gcj2wgs(arrdata) {
     var ee = 0.00669342162296594323;
     var lng = Number(arrdata[0]);
     var lat = Number(arrdata[1]);
-    var dlat = this.transformWD(lng - 105.0, lat - 35.0);
-    var dlng = this.transformJD(lng - 105.0, lat - 35.0);
+    var dlat = transformWD(lng - 105.0, lat - 35.0);
+    var dlng = transformJD(lng - 105.0, lat - 35.0);
     var radlat = (lat / 180.0) * PI;
     var magic = Math.sin(radlat);
     magic = 1 - ee * magic * magic;
@@ -121,9 +121,8 @@ function lnglatToCartesian(lnglat) {
 function lnglatArrToCartesianArr(lnglatArr) {
     if (!lnglatArr) return [];
     var arr = [];
-    var that = this;
     for (var i = 0; i < lnglatArr.length; i++) {
-        arr.push(that.lnglatToCartesian(lnglatArr[i]));
+        arr.push(lnglatToCartesian(lnglatArr[i]));
     }
     return arr;
 }
