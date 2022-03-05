@@ -132,7 +132,6 @@
 </template>
 
 <script>
-import {reactive, ref } from "vue";
 import DetailBox from "../components/DetailBox";
 import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
@@ -258,7 +257,6 @@ export default {
   },
   mounted() {
     this.$refs.vcViewer.createPromise.then(({ Cesium, viewer }) => {
-      console.log('viewer is loaded.')
       viewer.scene.globe.depthTestAgainstTerrain = false;
     });
   },
@@ -272,7 +270,6 @@ export default {
       let that=this;
       that.$axios.get("earthquakeInfo/getAllEarthquake")
           .then(res=>{
-            console.log('earthquakeInfoList',res)
             that.earthquakeInfoList=res.data;
             that.selectedEarthquakeIndex=0;
           })
@@ -340,7 +337,6 @@ export default {
       // hyc
       let that = this;
       this.$axios.get("/findAllHospital").then((res) => {
-        console.log(res.data.length);
         this.hospitalList=res.data
         for (let i = 0; i < res.data.length; i++) {
           let hospitalBillboard = {};
@@ -376,97 +372,55 @@ export default {
         }
       })
     },
-    // hyc2
-    // startFindRoad(){
-    //   let that=this;
-    // },
     getPositionRoad(viewer, event) {
-      /*
-      // var position = viewer.scene.pickPosition(event.position);
-      var position = (this.longTemp, this.latiTemp, this.heiTemp); //我知道了，getPosition中其实已经转换完成了，所以后面应该不需要再进行操作了
-      //输出之后我们发现如前言所说的坐标都是笛卡尔坐标，所以我们需要转换笛卡尔坐标
-      console.log("笛卡尔3：" + position);
-      //将笛卡尔坐标转化为弧度坐标
-      var cartographic = Cesium.Cartographic.fromCartesian(position);
-      console.log("弧度：" + cartographic);
-      //将弧度坐标转换为经纬度坐标
-      var longitude = Cesium.Math.toDegrees(cartographic.longitude); //经度
-      var latitude = Cesium.Math.toDegrees(cartographic.latitude); //纬度
-      var height = cartographic.height; //高度
-    */
       console.log("现在点击的坐标经纬度以及高度为:",this.longTemp,this.latiTemp,this.heiTemp,"以及现在num的值为",this.num)
-      var longitude = this.longTemp;
-      var latitude = this.latiTemp;
-      var height = this.heiTemp;
+      let longitude = this.longTemp;
+      let latitude = this.latiTemp;
+      let height = this.heiTemp;
       let that = this;
-      if (that.num != 0) {
+      if (that.num !== 0) {
         that.startLon = longitude;
         that.startLat = latitude;
         that.startHei = height;
         that.num += 1;
-      } else {
-        alert("您还没有选取点，请点击屏幕进行选点");
+      }
+      else {
+        that.$message.error("您还没有选取点，请点击屏幕进行选点");
         return;
       }
-      // else {
-      //   that.long2 = longitude;
-      //   that.lati2 = latitude;
-      //   that.hei2 = height;
-      //   that.num = 0;
-      // }
-      console.log("经纬度：" + longitude, latitude, height);
-      alert(
-        "经度：" +
-          this.startLon +
-          "纬度：" +
-          this.startLat +
-          "高度：" +
-          this.startHei
-      );
-      // alert(
-      //   "经度：" + this.long2 + "纬度：" + this.lati2 + "高度：" + this.hei2
-      // );
-      console.log("num" + this.num);
-      var start = {
+      that.$message.success("开始路径规划！起点：经度："+this.startLon +"纬度："+this.startLat+"高度："+this.startHei);
+      let start = {
         lng: this.startLon,
         lat: this.startLat,
         hei: this.startHei,
       };
-      // var end = {
-      //   longitude: this.long2,
-      //   latitude: this.lati2,
-      //   height: this.lati2,
-      // };
       that.$axios
         .post("/calculateDistance", that.$qs.stringify(start))
         .then((res) => {
-          console.log(res.data.endLon);
           that.endLat = res.data.endLat;
           that.endLon = res.data.endLon;
-          var start = {
+          let start = {
             longitude: this.startLon,
             latitude: this.startLat,
             height: this.startHei,
           };
-          var end = {
+          let end = {
             longitude: that.endLon,
             latitude: that.endLat,
             height: that.endHei,
           };
-          console.log("控制台", start);
-          console.log("控制台", end);
           if (this.num) that.howRes(start, end); //调用this.howRes
         });
     },
     howRes(start, end) {
       if (!start || !end) return;
-      var startp = cartesianToLnglat(start, true);
-      var endP = cartesianToLnglat(end, true);
-      var search = this.searchRoute([startp[0], startp[1]], [endP[0], endP[1]]);
+      let startP = cartesianToLnglat(start, true);
+      let endP = cartesianToLnglat(end, true);
+      this.searchRoute([startP[0], startP[1]], [endP[0], endP[1]]);
     },
     searchRoute(startP, endP) {
-      var startP = wgs2gcj(startP);
-      var endP = wgs2gcj(endP);
+      startP = wgs2gcj(startP);
+      endP = wgs2gcj(endP);
       let that = this;
       this.$axios
           .get("http://restapi.amap.com/v3/direction/driving", {
@@ -480,26 +434,25 @@ export default {
             },
           })
           .then((res) => {
-            // that.addRouteLine(res.data.route.paths[0].steps);
-            console.log("res的值为", res);
+            console.log("路径规划结果：", res);
             let steps = res.data.route.paths[0].steps;
             let arr = [];
-            for (var i = 0; i < steps.length; i++) {
-              var item = steps[i];
-              var positionStr = item.polyline;
-              var strArr = positionStr.split(";");
-              for (var z = 0; z < strArr.length; z++) {
-                var item2 = strArr[z];
-                var strArr2 = item2.split(",");
-                var p = gcj2wgs(strArr2);
+            for (let i = 0; i < steps.length; i++) {
+              let item = steps[i];
+              let positionStr = item.polyline;
+              let strArr = positionStr.split(";");
+              for (let z = 0; z < strArr.length; z++) {
+                let item2 = strArr[z];
+                let strArr2 = item2.split(",");
+                let p = gcj2wgs(strArr2);
                 arr.push(p);
               }
             }
-            var cartesians = lnglatArrToCartesianArr(arr);
+            let cartesianArr = lnglatArrToCartesianArr(arr);
             let viewer=this.$refs.vcViewer.getCesiumObject();
-            var line = viewer.entities.add({
+            let line = viewer.entities.add({
               polyline: {
-                positions: cartesians,
+                positions: cartesianArr,
                 clampToGround: true,
                 material: Cesium.Color.RED.withAlpha(1),
                 width: 3,
@@ -509,38 +462,29 @@ export default {
           });
     },
     moveOnRoute(lineEntity) {
-      console.log("已进入line2");
-      var qicheModel = null;
-      if (!lineEntity) return;
-      var positions = lineEntity.polyline.positions.getValue();
-      console.log("positions", positions);
-      if (!positions) return;
-      var allDis = 0;
-      for (var index = 0; index < positions.length - 1; index++) {
-        var dis = Cesium.Cartesian3.distance(
-            positions[index],
-            positions[index + 1]
-        );
-        allDis += dis;
-      }
-      var playTime = 100;
-      var v = allDis / playTime;
       let viewer=this.$refs.vcViewer.getCesiumObject();
-      var startTime = viewer.clock.currentTime;
-      var endTime = Cesium.JulianDate.addSeconds(
-          startTime,
-          playTime,
-          new Cesium.JulianDate()
-      );
-      var property = new Cesium.SampledPositionProperty();
-      var t = 0;
-      for (var i = 1; i < positions.length; i++) {
-        if (i == 1) {
+      let carModel = null;
+      if (!lineEntity) return;
+      let positions = lineEntity.polyline.positions.getValue();
+      if (!positions) return;
+      let allDis = 0;
+      for (let index = 0; index < positions.length - 1; index++) {
+        let distance = Cesium.Cartesian3.distance(positions[index],positions[index + 1]);
+        allDis += distance;
+      }
+      let playTime = 100;
+      let v = allDis / playTime;
+      let startTime = viewer.clock.currentTime;
+      let endTime = Cesium.JulianDate.addSeconds(startTime,playTime,new Cesium.JulianDate());
+      let property = new Cesium.SampledPositionProperty();
+      let t = 0;
+      for (let i = 1; i < positions.length; i++) {
+        if (i === 1) {
           property.addSample(startTime, positions[0]);
         }
-        var dis = Cesium.Cartesian3.distance(positions[i], positions[i - 1]);
-        var time = dis / v + t;
-        var julianDate = Cesium.JulianDate.addSeconds(
+        let dis = Cesium.Cartesian3.distance(positions[i], positions[i - 1]);
+        let time = dis / v + t;
+        let julianDate = Cesium.JulianDate.addSeconds(
             startTime,
             time,
             new Cesium.JulianDate()
@@ -548,11 +492,11 @@ export default {
         property.addSample(julianDate, positions[i]);
         t += dis / v;
       }
-      if (qicheModel) {
-        viewer.entities.remove(qicheModel);
-        qicheModel = null;
-      }
-      qicheModel = viewer.entities.add({
+      // if (carModel) {
+      //   viewer.entities.remove(carModel);
+      //   carModel = null;
+      // }
+      carModel = viewer.entities.add({
         position: property,
         orientation: new Cesium.VelocityOrientationProperty(property),
         model: {
@@ -565,6 +509,8 @@ export default {
       viewer.clock.shouldAnimate = true;
       viewer.clock.stopTime = endTime;
     },
+
+    //物资分配特效
     onMouseover(e){
       if (e.cesiumObject instanceof Cesium.Label) {
         this.scale = 1.5 // or e.cesiumObject.scale = 1.5

@@ -103,7 +103,6 @@ function cartesianToLnglat(cartesian, isToWgs84) {
         var lat = cartesian.latitude;
         var lng = cartesian.longitude;
         var hei = cartesian.height;
-        console.log("1234555", cartesian, "9999", lat, lng, hei);
         return [lng, lat, hei];
     } else {
     }
