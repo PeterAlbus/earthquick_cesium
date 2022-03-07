@@ -24,3 +24,5 @@ pnpm-debug.log*
 
 /public/Cesium/
 /public/tileset/
+/public_temp/tileset/
+/public_temp/

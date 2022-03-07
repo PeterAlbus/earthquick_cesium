@@ -98,10 +98,10 @@
       </vc-datasource-custom>
 <!--      <vc-terrain-provider-tianditu token="fd7029d3dff756b437af91d68aadc6bf"></vc-terrain-provider-tianditu>-->
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="20">
-        <vc-imagery-provider-tianditu mapStyle="cva_w" token="fd7029d3dff756b437af91d68aadc6bf"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu mapStyle="cva_w" token="0fb49d6be7f3f4c2f8950e844add64e1"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="10">
-        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="fd7029d3dff756b437af91d68aadc6bf" ref="provider"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="0fb49d6be7f3f4c2f8950e844add64e1" ref="provider"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-navigation :offset="navigationConfig.offset" :otherOpts="navigationConfig.otherOpts"></vc-navigation>
       <vc-ajax-bar></vc-ajax-bar>
@@ -423,7 +423,7 @@ export default {
       endP = wgs2gcj(endP);
       let that = this;
       this.$axios
-          .get("http://restapi.amap.com/v3/direction/driving", {
+          .get("https://restapi.amap.com/v3/direction/driving", {
             params: {
               output: "json",
               extensions: "all",
