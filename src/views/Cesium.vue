@@ -31,12 +31,34 @@
     <EstimateEarthquake :earthquake="earthquakeInfoList[selectedEarthquakeIndex]"></EstimateEarthquake>
     <AddEarthquake></AddEarthquake>
     <!-- hyc2 -->
-    <el-button
-        type="primary"
-        round
-        @click="getPositionRoad"
-        class="toolbar-item"
-    >开始路径规划</el-button>
+<!--    <el-button-->
+<!--        type="primary"-->
+<!--        round-->
+<!--        @click="getPositionRoad"-->
+<!--        class="toolbar-item"-->
+<!--    >开始路径规划</el-button>-->
+    <el-popover
+        v-model:visible="visibleRoad"
+        placement="bottom"
+        :width="420"
+    >
+      <template #reference>
+        <el-button @click="visibleRoad = !visibleRoad" class="toolbar-item" round>
+          开始路径规划
+        </el-button>
+      </template>
+      <div>
+        <el-radio v-model="radioRoad" label="1" size="small" border>驾车</el-radio>
+        <el-radio v-model="radioRoad" label="2" size="small" border>步行</el-radio>
+        <el-radio v-model="radioRoad" label="3" size="small" border>电动车</el-radio>
+      </div>
+      <div style="margin-top: 20px">
+        <el-button type="primary" icon="el-icon-magic-stick" size="small" @click="selectPositionRoad">选取救援点</el-button>
+        <el-button type="primary" icon="el-icon-search" size="small" @click="getPositionRoad">开始路径规划</el-button>
+        <el-button type="danger" icon="el-icon-s-release" size="small" @click="stopPositionRoad">stop</el-button>
+      </div>
+    </el-popover>
+
   </el-row>
   <el-row ref="viewerContainer" class="viewer">
     <vc-viewer
@@ -98,10 +120,10 @@
       </vc-datasource-custom>
 <!--      <vc-terrain-provider-tianditu token="fd7029d3dff756b437af91d68aadc6bf"></vc-terrain-provider-tianditu>-->
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="20">
-        <vc-imagery-provider-tianditu mapStyle="cva_w" token="0fb49d6be7f3f4c2f8950e844add64e1"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu mapStyle="cva_w" token="bd0899960d2caef1388ef79478580103"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="10">
-        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="0fb49d6be7f3f4c2f8950e844add64e1" ref="provider"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="bd0899960d2caef1388ef79478580103" ref="provider"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-navigation :offset="navigationConfig.offset" :otherOpts="navigationConfig.otherOpts"></vc-navigation>
       <vc-ajax-bar></vc-ajax-bar>
@@ -147,6 +169,11 @@ export default {
   },
   data() {
     return {
+      // buttonRef:this.$refs.buttonRef,
+      visibleRoad:false,
+      radioRoad:"1",
+      Search:this.Search,
+      Check:this.Check,
       //data
       fireWeight:[],
       hospitalBillboards:[],
@@ -303,7 +330,7 @@ export default {
           this.longTemp = Cesium.Math.toDegrees(cartographic.longitude);
           this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude);
           this.heiTemp = cartographic.height;
-          this.num++
+          // this.num++
           console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
         }
         let kind=e.id.split("_")[0]
@@ -372,8 +399,18 @@ export default {
         }
       })
     },
+    stopPositionRoad(){
+      this.num=0;
+      this.$message.error("结束路径规划,如想要开启路径规划功能，请重新选点");
+      this.visibleRoad=!this.visibleRoad;
+    },
+    selectPositionRoad(){
+      this.num++;
+      this.$message.success("现在可以开始选取救援点啦~");
+    },
     getPositionRoad(viewer, event) {
       console.log("现在点击的坐标经纬度以及高度为:",this.longTemp,this.latiTemp,this.heiTemp,"以及现在num的值为",this.num)
+      console.log("我们现在点击的坐标",this.radioRoad)
       let longitude = this.longTemp;
       let latitude = this.latiTemp;
       let height = this.heiTemp;
@@ -422,8 +459,18 @@ export default {
       startP = wgs2gcj(startP);
       endP = wgs2gcj(endP);
       let that = this;
+      let travelWay;
+      if(this.radioRoad=="1"){
+        travelWay="/v3/direction/driving";
+      }
+      if(this.radioRoad=="2"){
+        travelWay="/v3/direction/walking"
+      }
+      if(this.radioRoad=="3"){
+        travelWay="/v4/direction/bicycling"
+      }
       this.$axios
-          .get("https://restapi.amap.com/v3/direction/driving", {
+          .get("https://restapi.amap.com"+travelWay, {
             params: {
               output: "json",
               extensions: "all",
@@ -434,8 +481,12 @@ export default {
             },
           })
           .then((res) => {
-            console.log("路径规划结果：", res);
-            let steps = res.data.route.paths[0].steps;
+            console.log("路径规划结果：", res.data);
+            let steps;
+            if(this.radioRoad==3)
+              steps = res.data.data.paths[0].steps;
+            else if(this.radioRoad==1 ||this.radioRoad==2)
+              steps = res.data.route.paths[0].steps;
             let arr = [];
             for (let i = 0; i < steps.length; i++) {
               let item = steps[i];
@@ -450,12 +501,22 @@ export default {
             }
             let cartesianArr = lnglatArrToCartesianArr(arr);
             let viewer=this.$refs.vcViewer.getCesiumObject();
+            let colorTraffic;
+            if(this.radioRoad==1){
+              colorTraffic=Cesium.Color.RED.withAlpha(0.9);
+            }
+            else if(this.radioRoad==2){
+              colorTraffic=Cesium.Color.BLUE.withAlpha(1);
+            }
+            else{
+              colorTraffic=Cesium.Color.YELLOW.withAlpha(1);
+            }
             let line = viewer.entities.add({
               polyline: {
                 positions: cartesianArr,
                 clampToGround: true,
-                material: Cesium.Color.RED.withAlpha(1),
-                width: 3,
+                material: colorTraffic,
+                width: 5,
               },
             });
             this.moveOnRoute(line);
@@ -496,12 +557,26 @@ export default {
       //   viewer.entities.remove(carModel);
       //   carModel = null;
       // }
+      let modelUrl;
+      let modelSize;
+      if(this.radioRoad==1){
+        modelSize=5;
+        modelUrl="https://file.peteralbus.com/assets/cesium/glb/GroundVehicle.glb";
+      }
+      else if(this.radioRoad==2){
+        modelSize=250;
+        modelUrl="/Astronaut.glb";
+      }
+      else if(this.radioRoad==3){
+        modelSize=50;
+        modelUrl="/Motorcycle.glb"
+      }
       carModel = viewer.entities.add({
         position: property,
         orientation: new Cesium.VelocityOrientationProperty(property),
         model: {
-          uri: "https://file.peteralbus.com/assets/cesium/glb/GroundVehicle.glb",
-          scale: 5,
+          uri: modelUrl,
+          scale: modelSize,
         },
       });
       viewer.clock.currentTime = startTime;
