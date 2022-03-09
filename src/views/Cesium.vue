@@ -113,7 +113,7 @@
               :semiMinorAxis="item.longRadius*1000"
               :semiMajorAxis="item.shortRadius*1000"
               :material="[255, (10-item.intensity)*30, 0, 125]"
-              :rotation="item.rotation"
+              :rotation="item.angle"
               :fill="true">
           </vc-graphics-ellipse>
         </vc-entity>
@@ -326,12 +326,18 @@ export default {
         if(e._id==='__Vc__Pick__Location__')
         {
           // console.log('pickEvt',e)
-          let cartographic = Cesium.Cartographic.fromCartesian(e._position._value);
-          this.longTemp = Cesium.Math.toDegrees(cartographic.longitude);
-          this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude);
-          this.heiTemp = cartographic.height;
-          // this.num++
-          console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
+          if(this.num!==0)
+          {
+            let cartographic = Cesium.Cartographic.fromCartesian(e._position._value);
+            this.longTemp = Cesium.Math.toDegrees(cartographic.longitude);
+            this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude);
+            this.heiTemp = cartographic.height;
+            console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
+          }
+          else
+          {
+            this.visibleRoad = false;
+          }
         }
         let kind=e.id.split("_")[0]
         let index=0
@@ -460,13 +466,13 @@ export default {
       endP = wgs2gcj(endP);
       let that = this;
       let travelWay;
-      if(this.radioRoad=="1"){
+      if(this.radioRoad==="1"){
         travelWay="/v3/direction/driving";
       }
-      if(this.radioRoad=="2"){
+      if(this.radioRoad==="2"){
         travelWay="/v3/direction/walking"
       }
-      if(this.radioRoad=="3"){
+      if(this.radioRoad==="3"){
         travelWay="/v4/direction/bicycling"
       }
       this.$axios
@@ -483,9 +489,9 @@ export default {
           .then((res) => {
             console.log("路径规划结果：", res.data);
             let steps;
-            if(this.radioRoad==3)
+            if(this.radioRoad===3)
               steps = res.data.data.paths[0].steps;
-            else if(this.radioRoad==1 ||this.radioRoad==2)
+            else if(this.radioRoad===1 ||this.radioRoad===2)
               steps = res.data.route.paths[0].steps;
             let arr = [];
             for (let i = 0; i < steps.length; i++) {
@@ -502,10 +508,10 @@ export default {
             let cartesianArr = lnglatArrToCartesianArr(arr);
             let viewer=this.$refs.vcViewer.getCesiumObject();
             let colorTraffic;
-            if(this.radioRoad==1){
+            if(this.radioRoad===1){
               colorTraffic=Cesium.Color.RED.withAlpha(0.9);
             }
-            else if(this.radioRoad==2){
+            else if(this.radioRoad===2){
               colorTraffic=Cesium.Color.BLUE.withAlpha(1);
             }
             else{
@@ -559,17 +565,17 @@ export default {
       // }
       let modelUrl;
       let modelSize;
-      if(this.radioRoad==1){
+      if(this.radioRoad===1){
         modelSize=5;
         modelUrl="https://file.peteralbus.com/assets/cesium/glb/GroundVehicle.glb";
       }
-      else if(this.radioRoad==2){
+      else if(this.radioRoad===2){
         modelSize=250;
-        modelUrl="/Astronaut.glb";
+        modelUrl="https://file.peteralbus.com/assets/cesium/glb/Astronaut.glb";
       }
-      else if(this.radioRoad==3){
+      else if(this.radioRoad===3){
         modelSize=50;
-        modelUrl="/Motorcycle.glb"
+        modelUrl="https://file.peteralbus.com/assets/cesium/glb/Motorcycle.glb"
       }
       carModel = viewer.entities.add({
         position: property,
