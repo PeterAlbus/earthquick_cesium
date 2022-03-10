@@ -8,14 +8,26 @@
     <el-select v-model="imageryConfig.mapStyle" placeholder="请选择" class="toolbar-item">
       <el-option v-for="item in imageryConfig.options" :key="item.value" :label="item.label" :value="item.value"> </el-option>
     </el-select>
-    <el-popover ref="controlVisible" placement="bottom" trigger="click" v-model:visible="layerControl.visible">
+    <el-popover ref="controlVisible" placement="bottom" trigger="click" v-model:visible="layerControl.visible" width="170px">
       <template #reference>
         <el-button type="default" icon="el-icon-menu" round class="toolbar-item">图层控制</el-button>
       </template>
       <el-checkbox v-model="layerControl.showIntensity" label="烈度图"></el-checkbox><br/>
       <el-checkbox v-model="layerControl.showEpicenter" label="震源"></el-checkbox>
       <el-checkbox v-model="layerControl.showHospital" label="显示医院"></el-checkbox>
-      <el-checkbox v-model="layerControl.showFireCenter" label="显示救援物资分配"></el-checkbox>
+      <el-tooltip placement="right" effect="light">
+        <template #content>
+          默认的物资总量为1000个
+        </template>
+        <el-checkbox v-model="layerControl.showFireCenter" label="显示救援物资分配"></el-checkbox>
+      </el-tooltip>
+      <el-collapse v-model="activeCalculateWeight" @change="handleChangeWeight">
+        <el-collapse-item title="展开" name="1">
+          手动设置物资分配总量:
+          <el-input-number v-model="DistributionSum" :step="100" size="small" style="margin-top: 10px;"/>
+          <el-button type="primary" icon="el-icon-success" size="small" @click="reGetCalculateWeight" style="margin-top: 10px;margin-left: 60px">确定</el-button>
+        </el-collapse-item>
+      </el-collapse>
     </el-popover>
     <el-button type="primary" round
                v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,100000)"
@@ -169,6 +181,8 @@ export default {
   },
   data() {
     return {
+      activeCalculateWeight:['1'],
+      DistributionSum:1000,
       // buttonRef:this.$refs.buttonRef,
       visibleRoad:false,
       radioRoad:"1",
@@ -288,6 +302,39 @@ export default {
     });
   },
   methods: {
+    handleChangeWeight(val) {
+      console.log(val);
+    },
+    GetCalculateWeight(){
+      let that=this;
+      this.$axios.get("/calculateWeight").then((res)=>{
+        let sum=0;
+        for(let i=0; i<res.data.length; i++){
+          let billboard={};
+          billboard.position={
+            lng:res.data[i].fireLon,
+            lat:res.data[i].fireLat,
+          }
+          billboard.image="https://file.peteralbus.com/assets/cesium/img/fireCenter.png";
+          billboard.scale = 0.1;
+          billboard.weight=1/(1-res.data[i].fireCenterWeight);
+          sum+=billboard.weight;
+          that.fireCenterBillboards.push(billboard);
+        }
+        for(let i=0;i<that.fireCenterBillboards.length;i++){
+          let fireWeight1={};
+          fireWeight1.position=that.fireCenterBillboards[i].position;
+          fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].weight/sum)*this.DistributionSum).toString()+"个";
+          that.fireWeight.push(fireWeight1);
+        }
+      })
+    },
+    reGetCalculateWeight(){
+      this.$message.warning("请耐心等待，后台正在重新进行物资分配~")
+      this.fireWeight=[];
+      this.fireCenterBillboards=[];
+      this.GetCalculateWeight();
+    },
     //update earthquake list
     updateEarthquakeList(list){
       this.earthquakeInfoList=list
@@ -383,27 +430,7 @@ export default {
           that.hospitalBillboards.push(hospitalBillboard);
         }
       });
-      this.$axios.get("/calculateWeight").then((res)=>{
-        let sum=0;
-        for(let i=0; i<res.data.length; i++){
-          let billboard={};
-          billboard.position={
-            lng:res.data[i].fireLon,
-            lat:res.data[i].fireLat,
-          }
-          billboard.image="https://file.peteralbus.com/assets/cesium/img/fireCenter.png";
-          billboard.scale = 0.1;
-          billboard.weight=1/(1-res.data[i].fireCenterWeight);
-          sum+=billboard.weight;
-          that.fireCenterBillboards.push(billboard);
-        }
-        for(let i=0;i<that.fireCenterBillboards.length;i++){
-          let fireWeight1={};
-          fireWeight1.position=that.fireCenterBillboards[i].position;
-          fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].weight/sum)*1000).toString()+"个";
-          that.fireWeight.push(fireWeight1);
-        }
-      })
+      this.GetCalculateWeight();
     },
     stopPositionRoad(){
       this.num=0;
@@ -466,13 +493,13 @@ export default {
       endP = wgs2gcj(endP);
       let that = this;
       let travelWay;
-      if(this.radioRoad==="1"){
+      if(this.radioRoad=="1"){
         travelWay="/v3/direction/driving";
       }
-      if(this.radioRoad==="2"){
+      if(this.radioRoad=="2"){
         travelWay="/v3/direction/walking"
       }
-      if(this.radioRoad==="3"){
+      if(this.radioRoad=="3"){
         travelWay="/v4/direction/bicycling"
       }
       this.$axios
@@ -489,9 +516,9 @@ export default {
           .then((res) => {
             console.log("路径规划结果：", res.data);
             let steps;
-            if(this.radioRoad===3)
+            if(this.radioRoad==3)
               steps = res.data.data.paths[0].steps;
-            else if(this.radioRoad===1 ||this.radioRoad===2)
+            else if(this.radioRoad==1 ||this.radioRoad==2)
               steps = res.data.route.paths[0].steps;
             let arr = [];
             for (let i = 0; i < steps.length; i++) {
@@ -508,10 +535,10 @@ export default {
             let cartesianArr = lnglatArrToCartesianArr(arr);
             let viewer=this.$refs.vcViewer.getCesiumObject();
             let colorTraffic;
-            if(this.radioRoad===1){
+            if(this.radioRoad==1){
               colorTraffic=Cesium.Color.RED.withAlpha(0.9);
             }
-            else if(this.radioRoad===2){
+            else if(this.radioRoad==2){
               colorTraffic=Cesium.Color.BLUE.withAlpha(1);
             }
             else{
@@ -565,15 +592,15 @@ export default {
       // }
       let modelUrl;
       let modelSize;
-      if(this.radioRoad===1){
+      if(this.radioRoad==1){
         modelSize=5;
         modelUrl="https://file.peteralbus.com/assets/cesium/glb/GroundVehicle.glb";
       }
-      else if(this.radioRoad===2){
+      else if(this.radioRoad==2){
         modelSize=250;
         modelUrl="https://file.peteralbus.com/assets/cesium/glb/Astronaut.glb";
       }
-      else if(this.radioRoad===3){
+      else if(this.radioRoad==3){
         modelSize=50;
         modelUrl="https://file.peteralbus.com/assets/cesium/glb/Motorcycle.glb"
       }
