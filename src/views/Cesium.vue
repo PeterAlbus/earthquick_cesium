@@ -1,6 +1,6 @@
 <template>
   <DetailBox :info="detailInfo" title="详情"
-             @onClickButton="selectedEarthquakeIndex=detailBox.quickEarthquakeIndex"
+             @onClickButton="selectEarthquakeIndex(detailBox.quickEarthquakeIndex)"
              @onClose="detailBox.showDetail=false"
              :showBox="detailBox.showDetail"
              :showButton="detailBox.showButton"></DetailBox>
@@ -140,13 +140,21 @@
       <vc-navigation :offset="navigationConfig.offset" :otherOpts="navigationConfig.otherOpts"></vc-navigation>
       <vc-ajax-bar></vc-ajax-bar>
       <!-- hyc：增加图标位置 -->
-      <vc-collection-primitive
-        :show="layerControl.showHospital"
+<!--      <vc-collection-primitive-->
+<!--        :show="layerControl.showHospital"-->
+<!--      >-->
+<!--        <vc-collection-billboard-->
+<!--          :billboards="hospitalBillboards"-->
+<!--        ></vc-collection-billboard>-->
+<!--      </vc-collection-primitive>-->
+      <vc-datasource-custom
+          :show="layerControl.showHospital"
+          name="hospitalList"
+          :entities="hospitalBillboards"
+          @clusterEvent="onHospitalClusterEvent"
+          @ready="onHospitalReady"
       >
-        <vc-collection-billboard
-          :billboards="hospitalBillboards"
-        ></vc-collection-billboard>
-      </vc-collection-primitive>
+      </vc-datasource-custom>
       <!--        hyc：增加椭圆显示位置-->
       <vc-entity :position="[longTemp, latiTemp]" description="您所点击的位置所表示的区域">
         <vc-graphics-ellipse :semiMinorAxis="50.0" :semiMajorAxis="50.0" :material="[255, 0, 0, 125]"></vc-graphics-ellipse>
@@ -346,11 +354,13 @@ export default {
           .then(res=>{
             that.earthquakeInfoList=res.data;
             that.selectedEarthquakeIndex=0;
+            that.getHospitals();
           })
     },
     //change selected earthquake by index
     selectEarthquakeIndex(index){
       this.selectedEarthquakeIndex=index;
+      this.getHospitals();
     },
     //change location
     cameraTo(lat,lon,height){
@@ -370,9 +380,9 @@ export default {
     pickEvt(e){
       this.layerControl.visible=false
       try{
+        // console.log('pickEvt',e)
         if(e._id==='__Vc__Pick__Location__')
         {
-          // console.log('pickEvt',e)
           if(this.num!==0)
           {
             let cartographic = Cesium.Cartographic.fromCartesian(e._position._value);
@@ -415,22 +425,29 @@ export default {
     },
     onViewerReady({ Cesium, viewer }) {
       // hyc
+      this.GetCalculateWeight();
+    },
+    getHospitals(){
+      // hyc
       let that = this;
-      this.$axios.get("/findAllHospital").then((res) => {
-        this.hospitalList=res.data
+      that.hospitalBillboards=[];
+      this.$axios.get("/findHospitalNearby?earthquakeId="+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId).then((res) => {
+        this.hospitalList = res.data
         for (let i = 0; i < res.data.length; i++) {
           let hospitalBillboard = {};
           hospitalBillboard.position = {
             lng: res.data[i].lon,
             lat: res.data[i].lat,
           };
-          hospitalBillboard.id='hospital_'+i
-          hospitalBillboard.image = "https://file.peteralbus.com/assets/cesium/img/Hospital.png";
-          hospitalBillboard.scale = 0.1;
+          hospitalBillboard.billboard = {
+            id: 'hospital_' + i,
+            image: "https://file.peteralbus.com/assets/cesium/img/Hospital.png",
+            scale: 0.1
+          }
+          hospitalBillboard.id='hospital_' + i
           that.hospitalBillboards.push(hospitalBillboard);
         }
       });
-      this.GetCalculateWeight();
     },
     stopPositionRoad(){
       this.num=0;
@@ -618,6 +635,31 @@ export default {
       viewer.clock.stopTime = endTime;
     },
 
+    onHospitalReady ({ Cesium, viewer, cesiumObject }) {
+      window.cesiumObject = cesiumObject
+
+      //开启聚合功能
+      cesiumObject.clustering.enabled = true
+      cesiumObject.clustering.pixelRange = 30
+      cesiumObject.clustering.minimumClusterSize = 3
+    },
+    onHospitalClusterEvent(clusteredEntities, cluster){
+      cluster.billboard.show = !0
+      cluster.label.show = !1
+      cluster.billboard.id = cluster.label.id
+      cluster.billboard.verticalOrigin = Cesium.VerticalOrigin.CENTER
+      clusteredEntities.length >= 300
+          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/300+.png')
+          : clusteredEntities.length >= 150
+              ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/150+.png')
+              : clusteredEntities.length >= 90
+                  ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/90+.png')
+                  : clusteredEntities.length >= 30
+                      ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/30+.png')
+                      : clusteredEntities.length > 10
+                          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/10+.png')
+                          : (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/' + clusteredEntities.length + '.png')
+    },
     //物资分配特效
     onMouseover(e){
       if (e.cesiumObject instanceof Cesium.Label) {
