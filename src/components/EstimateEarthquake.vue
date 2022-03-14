@@ -59,15 +59,15 @@
     <div style="height: 30vh">
       <div style="float: left;">
         <div :style="{'--color': ecoColor}" style="float: left" class="circle"/>
-        <p style="font-size: large" >&nbsp;预估经济损失:{{ estimate.predictEconomy }}亿元</p>
+        <p style="font-size: large" >&nbsp;预估经济损失:<br/>{{ estimate.predictEconomy.toFixed(4) }}亿元</p>
         <br/>
-        <div><img src="../assets/predictdeath.png" alt=""></div>
+        <div><img src="../assets/predictdeath.png" alt="" style="width: 25vw"></div>
       </div>
       <div style="float: right;">
         <div :style="{'--color': deathColor}" style="float:left;" class="circle"/>
-        <p style="font-size: large">&nbsp;预估死亡人数:{{ estimate.predictDeath }}人</p>
+        <p style="font-size: large">&nbsp;预估死亡人数:<br/>{{ estimate.predictDeath }}人</p>
         <br/>
-        <div><img src="../assets/predictdeath.png" alt=""></div>
+        <div><img src="../assets/predictdeath.png" style="width: 25vw" alt=""></div>
       </div>
     </div>
   </el-dialog>
