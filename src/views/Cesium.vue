@@ -160,13 +160,20 @@
         <vc-graphics-ellipse :semiMinorAxis="50.0" :semiMajorAxis="50.0" :material="[255, 0, 0, 125]"></vc-graphics-ellipse>
       </vc-entity>
       <!--hyc:消防队位置-->
+      <vc-datasource-custom
+          :show="layerControl.showFireCenter"
+          name="fireCenterList"
+          :entities="fireCenterBillboards"
+          @clusterEvent="onFireCenterClusterEvent"
+          @ready="onFireCenterReady"
+          @mouseout="onMouseout"
+          @mouseover="onMouseover"
+      >
+      </vc-datasource-custom>
       <vc-collection-primitive
           :show="layerControl.showFireCenter"
       >
-        <vc-collection-billboard
-            :billboards="fireCenterBillboards"
-        ></vc-collection-billboard>
-        <vc-collection-label :labels="fireWeight" @mouseout="onMouseout" @mouseover="onMouseover">
+        <vc-collection-label :labels="fireWeight" >
         </vc-collection-label>
       </vc-collection-primitive>
     </vc-viewer>
@@ -323,17 +330,23 @@ export default {
             lng:res.data[i].fireLon,
             lat:res.data[i].fireLat,
           }
-          billboard.image="https://file.peteralbus.com/assets/cesium/img/fireCenter.png";
-          billboard.scale = 0.1;
-          billboard.weight=1/(1-res.data[i].fireCenterWeight);
-          sum+=billboard.weight;
+          billboard.billboard={
+            image: "https://file.peteralbus.com/assets/cesium/img/fireCenter.png",
+            scale: 0.1,
+            weight: 1/(1-res.data[i].fireCenterWeight),
+            pixelOffset:{x: 0, y: -45}
+          }
+          sum+=billboard.billboard.weight;
           that.fireCenterBillboards.push(billboard);
         }
         for(let i=0;i<that.fireCenterBillboards.length;i++){
           let fireWeight1={};
           fireWeight1.position=that.fireCenterBillboards[i].position;
-          fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].weight/sum)*this.DistributionSum).toString()+"个";
-          that.fireWeight.push(fireWeight1);
+          that.fireCenterBillboards[i].label={
+            text:"所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].billboard.weight/sum)*this.DistributionSum).toString()+"个"
+          }
+          // fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].billboard.weight/sum)*this.DistributionSum).toString()+"个";
+          // that.fireWeight.push(fireWeight1);
         }
       })
     },
@@ -346,6 +359,7 @@ export default {
     //update earthquake list
     updateEarthquakeList(list){
       this.earthquakeInfoList=list
+      this.getHospitals();
     },
     //get earthquake list
     getEarthquakeList(){
@@ -644,6 +658,31 @@ export default {
       cesiumObject.clustering.minimumClusterSize = 3
     },
     onHospitalClusterEvent(clusteredEntities, cluster){
+      cluster.billboard.show = !0
+      cluster.label.show = !1
+      cluster.billboard.id = cluster.label.id
+      cluster.billboard.verticalOrigin = Cesium.VerticalOrigin.CENTER
+      clusteredEntities.length >= 300
+          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/300+.png')
+          : clusteredEntities.length >= 150
+              ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/150+.png')
+              : clusteredEntities.length >= 90
+                  ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/90+.png')
+                  : clusteredEntities.length >= 30
+                      ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/30+.png')
+                      : clusteredEntities.length > 10
+                          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/10+.png')
+                          : (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/' + clusteredEntities.length + '.png')
+    },
+    onFireCenterReady ({ Cesium, viewer, cesiumObject }) {
+      window.cesiumObject = cesiumObject
+
+      //开启聚合功能
+      cesiumObject.clustering.enabled = true
+      cesiumObject.clustering.pixelRange = 30
+      cesiumObject.clustering.minimumClusterSize = 3
+    },
+    onFireCenterClusterEvent(clusteredEntities, cluster){
       cluster.billboard.show = !0
       cluster.label.show = !1
       cluster.billboard.id = cluster.label.id
