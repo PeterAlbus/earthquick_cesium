@@ -3,7 +3,7 @@
   <el-dialog
       v-model="dialogVisible"
       title="地震灾情快速评估"
-      width="65vw"
+      width="60vw"
       center
   >
     <el-descriptions
@@ -48,26 +48,41 @@
       </el-descriptions-item>
     </el-descriptions>
     <br/>
-    <el-card style="height: 7.5vh" shadow="hover">
-      <div>估算的人口密度：&nbsp{{estimate.population}}人/km²（计算结果仅供参考）</div>
-    </el-card>
+    <el-collapse>
+      <el-collapse-item name="1">
+        <template #title>
+          估算的人口密度：&nbsp{{estimate.population}}人/km²（计算结果仅供参考)
+        </template>
+      <div>
+            我们以建筑物损坏率为主要参数，选择指数函数作为地震人员伤亡的基本模型。测定结果如下公式所示。
+            <br/>
+            <code>N = 0.461 * αm * αden * αtime * αall * e^(12.285⋅Bdr)</code>
+            <br/>
+            其中N为伤亡人数，Bdr为建筑物损坏比例，αm,αden、αtime和αall分别为地震震级和强度、人口密度、地震发生时间和区域整体抗震水平的修正系数。
+            <br/>
+            而对于经济损失方面的预估，我们选用了基于震中烈度的评估模型
+            <br/>
+            <code>lg L = 0.844 44I － 1.831</code>
+            <br/>
+            L 为地震直接经济损失，I 为震中烈度.
+            利用 MATLAB 进行拟合优度分析，确定系数 R － square = 0． 957 6 ＞ 0． 95，说明此次拟合结果良好
+      </div>
+      </el-collapse-item>
+    </el-collapse>
     <br/>
-<!--            <div style="height: 40vh;width: 55vw">-->
-<!--              <div ref="bar" style="height:40vh;width:27.5vw;float: left"></div>-->
-<!--              <div ref="bar1" style="height:40vh;width:27.5vw;float: right"></div>-->
-<!--            </div>-->
-    <div style="height: 30vh">
+
+    <div style="height: 32.5vh">
       <div style="float: left;">
         <div :style="{'--color': ecoColor}" style="float: left" class="circle"/>
-        <p style="font-size: large" >&nbsp;预估经济损失:<br/>{{ estimate.predictEconomy.toFixed(4) }}亿元</p>
+        <p style="font-size: large" >&nbsp;预估经济损失:{{ estimate.predictEconomy }}亿元</p>
         <br/>
-        <div><img src="../assets/predictdeath.png" alt="" style="width: 25vw"></div>
+        <el-image :src="require('../assets/predictdeath.png')"></el-image>
       </div>
       <div style="float: right;">
         <div :style="{'--color': deathColor}" style="float:left;" class="circle"/>
-        <p style="font-size: large">&nbsp;预估死亡人数:<br/>{{ estimate.predictDeath }}人</p>
+        <p style="font-size: large">&nbsp;预估死亡人数:{{ estimate.predictDeath }}人</p>
         <br/>
-        <div><img src="../assets/predictdeath.png" style="width: 25vw" alt=""></div>
+        <el-image :src="require('../assets/predictdeath.png')"></el-image>
       </div>
     </div>
   </el-dialog>
