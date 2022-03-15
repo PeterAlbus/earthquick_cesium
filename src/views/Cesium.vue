@@ -23,8 +23,10 @@
       </el-tooltip>
       <el-collapse v-model="activeCalculateWeight" @change="handleChangeWeight">
         <el-collapse-item title="展开" name="1">
-          手动设置物资分配总量:
+          设置物资分配总量:
           <el-input-number v-model="DistributionSum" :step="100" size="small" style="margin-top: 10px;"/>
+          设置物资分配地区数量:
+          <el-input-number v-model="DistrictSum" :step="5" size="small" style="margin-top: 10px;" :min="5" :max="30"/>
           <el-button type="primary" icon="el-icon-success" size="small" @click="reGetCalculateWeight" style="margin-top: 10px;margin-left: 60px">确定</el-button>
         </el-collapse-item>
       </el-collapse>
@@ -190,6 +192,7 @@ export default {
   },
   data() {
     return {
+      DistrictSum:10,
       activeCalculateWeight:['1'],
       DistributionSum:1000,
       cesiumLoading:true,
@@ -464,13 +467,15 @@ export default {
     },
     getFireCenters(){
       // hyc
+      this.fireWeight=[];
+      this.fireCenterBillboards=[];
       let that = this;
-      that.hospitalBillboards=[];
       this.$axios.get("/findFireCenterNearby?earthquakeId="+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId).then((res) => {
-        console.log(this.hospitalList)
-        this.hospitalList = res.data
         let sum=0;
         for(let i=0; i<res.data.length; i++){
+          if(i>=that.DistrictSum){
+            break;
+          }
           let billboard={};
           billboard.position={
             lng:res.data[i].fireLon,
