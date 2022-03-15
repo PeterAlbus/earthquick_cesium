@@ -126,10 +126,10 @@
       </vc-datasource-custom>
 <!--      <vc-terrain-provider-tianditu token="fd7029d3dff756b437af91d68aadc6bf"></vc-terrain-provider-tianditu>-->
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="20">
-        <vc-imagery-provider-tianditu mapStyle="cva_w" token="bd0899960d2caef1388ef79478580103"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu mapStyle="cva_w" token="b55cefd6c24d54477af5687db8a4751d"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="10">
-        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="bd0899960d2caef1388ef79478580103" ref="provider"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="b55cefd6c24d54477af5687db8a4751d" ref="provider"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-navigation :offset="navigationConfig.offset" :otherOpts="navigationConfig.otherOpts"></vc-navigation>
       <vc-ajax-bar></vc-ajax-bar>
@@ -348,12 +348,13 @@ export default {
       this.$message.warning("请耐心等待，后台正在重新进行物资分配~")
       this.fireWeight=[];
       this.fireCenterBillboards=[];
-      this.GetCalculateWeight();
+      this.getFireCenters();
     },
     //update earthquake list
     updateEarthquakeList(list){
       this.earthquakeInfoList=list
       this.getHospitals();
+      this.getFireCenters();
     },
     //get earthquake list
     getEarthquakeList(){
@@ -363,12 +364,14 @@ export default {
             that.earthquakeInfoList=res.data;
             that.selectedEarthquakeIndex=0;
             that.getHospitals();
+            that.getFireCenters();
           })
     },
     //change selected earthquake by index
     selectEarthquakeIndex(index){
       this.selectedEarthquakeIndex=index;
       this.getHospitals();
+      this.getFireCenters();
     },
     //change location
     cameraTo(lat,lon,height){
@@ -435,7 +438,6 @@ export default {
     },
     onViewerReady({ Cesium, viewer }) {
       // hyc
-      this.GetCalculateWeight();
       this.cesiumLoading=false;
     },
     getHospitals(){
@@ -457,6 +459,40 @@ export default {
           }
           hospitalBillboard.id='hospital_' + i
           that.hospitalBillboards.push(hospitalBillboard);
+        }
+      });
+    },
+    getFireCenters(){
+      // hyc
+      let that = this;
+      that.hospitalBillboards=[];
+      this.$axios.get("/findFireCenterNearby?earthquakeId="+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId).then((res) => {
+        console.log(this.hospitalList)
+        this.hospitalList = res.data
+        let sum=0;
+        for(let i=0; i<res.data.length; i++){
+          let billboard={};
+          billboard.position={
+            lng:res.data[i].fireLon,
+            lat:res.data[i].fireLat,
+          }
+          billboard.billboard={
+            image: "https://file.peteralbus.com/assets/cesium/img/fireCenter.png",
+            scale: 0.1,
+            weight: 1/(1-res.data[i].fireCenterWeight),
+            pixelOffset:{x: 0, y: -45}
+          }
+          sum+=billboard.billboard.weight;
+          that.fireCenterBillboards.push(billboard);
+        }
+        for(let i=0;i<that.fireCenterBillboards.length;i++){
+          let fireWeight1={};
+          fireWeight1.position=that.fireCenterBillboards[i].position;
+          that.fireCenterBillboards[i].label={
+            text:"所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].billboard.weight/sum)*this.DistributionSum).toString()+"个"
+          }
+            // fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].billboard.weight/sum)*this.DistributionSum).toString()+"个";
+            // that.fireWeight.push(fireWeight1);
         }
       });
     },
