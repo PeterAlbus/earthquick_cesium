@@ -114,8 +114,8 @@
         <vc-entity
             :position="[earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,0]"
             :description="'最外圈烈度:'+item.intensity"
-            :id="'intensity'+item.intensity+'('+item.longRadius+','+item.shortRadius+')'"
-            v-for="item in earthquakeInfoList[selectedEarthquakeIndex].intensityLineList"
+            :id="'intensity_'+index"
+            v-for="(item,index) in earthquakeInfoList[selectedEarthquakeIndex].intensityLineList"
         >
           <vc-graphics-ellipse
               :semiMinorAxis="item.longRadius*1000"
@@ -209,7 +209,7 @@ export default {
         latitude:100.008,
         earthquakeTime:'2021-12-02 10:24:07',
         intensityLineList:[{
-          lindId:1,
+          lineId:1,
           longRadius:11.143207166465402,
           shortRadius:6.045067370310756,
           intensity:5,
@@ -401,6 +401,14 @@ export default {
           this.detailBox.showButton=false
           this.detailBox.showDetail=true
           this.detailBox.detailClass=3
+          this.detailBox.detailIndex=index
+        }
+        else if(kind==='intensity')
+        {
+          index=parseInt(e.id.split("_")[1])
+          this.detailBox.showButton=false
+          this.detailBox.showDetail=true
+          this.detailBox.detailClass=4
           this.detailBox.detailIndex=index
         }
         else
@@ -854,6 +862,23 @@ export default {
             key:'物资数量',
             value:this.detailBox.detailIndex,
           }]
+      }
+      else if(this.detailBox.detailClass===4)
+      {
+        info=[
+          {
+            key:'烈度',
+            value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].intensity+'(选中区域外圈等烈度线)',
+          },
+          {
+            key:'长轴半径',
+            value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].longRadius+'km',
+          },
+          {
+            key:'短轴半径',
+            value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].shortRadius+'km',
+          }
+        ]
       }
       return info
     }
