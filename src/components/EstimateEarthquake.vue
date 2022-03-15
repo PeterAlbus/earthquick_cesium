@@ -92,6 +92,7 @@ export default {
   methods:{
     getEarthquakeSituation(){
       let that=this
+      that.$message("已开始灾情评估，请耐心等待")
       that.$axios.get('estimate/getAnalyzeResult?earthquakeId='+this.earthquake.earthquakeId)
           .then(res=>{
             let temp_analyze = res.data;
@@ -139,6 +140,9 @@ export default {
               that.ecoColor = '#FF0000'
             }
             that.dialogVisible = true;
+          })
+          .catch(err=>{
+            this.$message.warning("暂时不支持该地区的灾情分析！")
           })
     },
   }

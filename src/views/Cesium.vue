@@ -39,6 +39,7 @@
         @changeSelect="selectEarthquakeIndex"
         @updateList="getEarthquakeList"
         @newList="updateEarthquakeList"
+        @jumpTo="cameraTo"
     ></EarthquakeSelect>
     <EstimateEarthquake :earthquake="earthquakeInfoList[selectedEarthquakeIndex]"></EstimateEarthquake>
     <AddEarthquake></AddEarthquake>
@@ -56,7 +57,7 @@
     >
       <template #reference>
         <el-button @click="visibleRoad = !visibleRoad" class="toolbar-item" round>
-          开始路径规划
+          救援路径规划
         </el-button>
       </template>
       <div>
@@ -72,7 +73,7 @@
     </el-popover>
 
   </el-row>
-  <el-row ref="viewerContainer" class="viewer">
+  <el-row ref="viewerContainer" class="viewer" v-loading="cesiumLoading" element-loading-text="初次加载可能稍慢，请耐心等待">
     <vc-viewer
         ref="vcViewer"
         :animation="viewerConfig.animation"
@@ -108,13 +109,6 @@
         </vc-entity>
       </vc-datasource-custom>
       <vc-datasource-custom name="intensity" :show="layerControl.showIntensity">
-        <vc-entity
-            :position="[earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude, 0]"
-            :description="'震源位置:'+earthquakeInfoList[selectedEarthquakeIndex].latitude+','+earthquakeInfoList[selectedEarthquakeIndex].longitude+',震级:'+earthquakeInfoList[selectedEarthquakeIndex].magnitude"
-            id="earthquake"
-        >
-          <vc-graphics-point ref="point1" color="red" :pixelSize="2*earthquakeInfoList[selectedEarthquakeIndex].magnitude"></vc-graphics-point>
-        </vc-entity>
         <vc-entity
             :position="[earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,0]"
             :description="'最外圈烈度:'+item.intensity"
@@ -198,7 +192,7 @@ export default {
     return {
       activeCalculateWeight:['1'],
       DistributionSum:1000,
-      // buttonRef:this.$refs.buttonRef,
+      cesiumLoading:true,
       visibleRoad:false,
       radioRoad:"1",
       Search:this.Search,
@@ -415,6 +409,7 @@ export default {
         if(kind==='epicenter')
         {
           index=parseInt(e.id.split("_")[1])
+          this.detailBox.showButton=true
           this.detailBox.showDetail=true
           this.detailBox.detailClass=1
           this.detailBox.detailIndex=index
@@ -423,6 +418,7 @@ export default {
         else if(kind==='hospital')
         {
           index=parseInt(e.id.split("_")[1])
+          this.detailBox.showButton=false
           this.detailBox.showDetail=true
           this.detailBox.detailClass=2
           this.detailBox.detailIndex=index
@@ -440,6 +436,7 @@ export default {
     onViewerReady({ Cesium, viewer }) {
       // hyc
       this.GetCalculateWeight();
+      this.cesiumLoading=false;
     },
     getHospitals(){
       // hyc

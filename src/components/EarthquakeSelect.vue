@@ -51,6 +51,7 @@
         <template #extra>
           <el-button type="primary" size="small" v-if="index!==selectedEarthquakeIndex" v-on:click="$emit('changeSelect',index);earthquakeSelectVisible=false">选择</el-button>
           <el-button type="info" size="small" v-if="selectedEarthquakeIndex===index">已选择</el-button>
+          <el-button type="success" size="small" v-on:click="$emit('jumpTo',item.longitude,item.latitude,100000);earthquakeSelectVisible=false">跳转</el-button>
           <el-button type="danger" size="small" v-on:click="deleteEarthquake(item.earthquakeId)">删除</el-button>
         </template>
         <el-descriptions-item>
@@ -96,7 +97,7 @@
 <script>
 export default {
   props: ['earthquakeInfoList','selectedEarthquakeIndex'],
-  emits: ['changeSelect','updateList','newList'],
+  emits: ['changeSelect','updateList','newList','jumpTo'],
   name: "EarthquakeSelect",
   data() {
     return {
@@ -110,7 +111,7 @@ export default {
         },
         {
           value:"china",
-          label:"中国"
+          label:"中国附近"
         }
       ],
       timeRange:[
