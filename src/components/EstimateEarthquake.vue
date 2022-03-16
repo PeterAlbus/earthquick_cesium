@@ -1,5 +1,7 @@
 <template>
-  <el-button type="danger" @click="getEarthquakeSituation" round style="margin: 5px" icon="el-icon-document">评估地震情况</el-button>
+  <el-button type="danger" @click="getEarthquakeSituation" round style="margin: 5px" icon="el-icon-document"
+             :loading="analyzing"
+  >评估地震情况</el-button>
   <el-dialog
       v-model="dialogVisible"
       title="地震灾情快速评估"
@@ -95,6 +97,7 @@ export default {
   data(){
     return {
       dialogVisible:false,
+      analyzing:false,
       estimate:{
         predictDeath:'',
         predictEconomy:'',
@@ -107,7 +110,7 @@ export default {
   methods:{
     getEarthquakeSituation(){
       let that=this
-      that.$message("已开始灾情评估，请耐心等待")
+      that.analyzing=true
       that.$axios.get('estimate/getAnalyzeResult?earthquakeId='+this.earthquake.earthquakeId)
           .then(res=>{
             let temp_analyze = res.data;
@@ -155,8 +158,10 @@ export default {
               that.ecoColor = '#FF0000'
             }
             that.dialogVisible = true;
+            that.analyzing=false
           })
           .catch(err=>{
+            that.analyzing=false
             this.$message.warning("暂时不支持该地区的灾情分析！")
           })
     },

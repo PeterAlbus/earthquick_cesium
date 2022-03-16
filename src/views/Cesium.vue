@@ -21,13 +21,13 @@
         </template>
         <el-checkbox v-model="layerControl.showFireCenter" label="显示救援物资分配"></el-checkbox>
       </el-tooltip>
-      <el-collapse v-model="activeCalculateWeight" @change="handleChangeWeight">
+      <el-collapse v-model="activeCalculateWeight" @change="handleChangeWeight" v-loading="fireCenterLoading" element-loading-text="正在进行物资分配计算">
         <el-collapse-item title="展开" name="1">
           设置物资分配总量:
           <el-input-number v-model="DistributionSum" :step="100" size="small" style="margin-top: 10px;"/>
           设置物资分配地区数量:
           <el-input-number v-model="DistrictSum" :step="5" size="small" style="margin-top: 10px;" :min="5" :max="30"/>
-          <el-button type="primary" icon="el-icon-success" size="small" @click="reGetCalculateWeight" style="margin-top: 10px;margin-left: 60px">确定</el-button>
+          <el-button type="primary" icon="el-icon-success" size="small" @click="reGetCalculateWeight" style="margin-top: 10px;margin-left: 60px">计算</el-button>
         </el-collapse-item>
       </el-collapse>
     </el-popover>
@@ -190,6 +190,7 @@ export default {
       activeCalculateWeight:['1'],
       DistributionSum:1000,
       cesiumLoading:true,
+      fireCenterLoading:false,
       visibleRoad:false,
       radioRoad:"1",
       Search:this.Search,
@@ -316,7 +317,6 @@ export default {
       this.fireWeight=[];
       this.fireCenterBillboards=[];
       this.getFireCenters();
-      this.layerControl.visible=false
     },
     //update earthquake list
     updateEarthquakeList(list){
@@ -451,6 +451,7 @@ export default {
       this.fireWeight=[];
       this.fireCenterBillboards=[];
       let that = this;
+      this.fireCenterLoading=true;
       this.$axios.get("/findFireCenterNearby?earthquakeId="+that.earthquakeInfoList[that.selectedEarthquakeIndex].earthquakeId).then((res) => {
         let sum=0;
         for(let i=0; i<res.data.length; i++){
@@ -482,6 +483,13 @@ export default {
             // fireWeight1.text="所要分配的物资数量为:"+Math.floor((that.fireCenterBillboards[i].billboard.weight/sum)*this.DistributionSum).toString()+"个";
             // that.fireWeight.push(fireWeight1);
         }
+        that.fireCenterLoading=false
+        that.layerControl.visible=false
+        that.$message.success('物资分配计算完成')
+      })
+      .catch(()=>{
+        that.fireCenterLoading=false
+        that.$message.error('物资分配计算失败')
       });
     },
     stopPositionRoad(){
@@ -684,16 +692,16 @@ export default {
       cluster.billboard.id = cluster.label.id
       cluster.billboard.verticalOrigin = Cesium.VerticalOrigin.CENTER
       clusteredEntities.length >= 300
-          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/300+.png')
+          ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/300+.png')
           : clusteredEntities.length >= 150
-              ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/150+.png')
+              ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/150+.png')
               : clusteredEntities.length >= 90
-                  ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/90+.png')
+                  ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/90+.png')
                   : clusteredEntities.length >= 30
-                      ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/30+.png')
+                      ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/30+.png')
                       : clusteredEntities.length > 10
-                          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/10+.png')
-                          : (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/' + clusteredEntities.length + '.png')
+                          ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/10+.png')
+                          : (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/' + clusteredEntities.length + '.png')
     },
     onFireCenterReady ({ Cesium, viewer, cesiumObject }) {
       window.cesiumObject = cesiumObject
@@ -701,7 +709,7 @@ export default {
       //开启聚合功能
       cesiumObject.clustering.enabled = true
       cesiumObject.clustering.pixelRange = 30
-      cesiumObject.clustering.minimumClusterSize = 3
+      cesiumObject.clustering.minimumClusterSize = 2
     },
     onFireCenterClusterEvent(clusteredEntities, cluster){
       cluster.billboard.show = !0
@@ -709,16 +717,16 @@ export default {
       cluster.billboard.id = cluster.label.id
       cluster.billboard.verticalOrigin = Cesium.VerticalOrigin.CENTER
       clusteredEntities.length >= 300
-          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/300+.png')
+          ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/300+.png')
           : clusteredEntities.length >= 150
-              ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/150+.png')
+              ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/150+.png')
               : clusteredEntities.length >= 90
-                  ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/90+.png')
+                  ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/90+.png')
                   : clusteredEntities.length >= 30
-                      ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/30+.png')
+                      ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/30+.png')
                       : clusteredEntities.length > 10
-                          ? (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/10+.png')
-                          : (cluster.billboard.image = 'https://zouyaoji.top/vue-cesium/SampleData/images/cluser/' + clusteredEntities.length + '.png')
+                          ? (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/10+.png')
+                          : (cluster.billboard.image = 'https://file.peteralbus.com/assets/cesium/img/clusters/' + clusteredEntities.length + '.png')
     },
     //物资分配特效
     onMouseover(e){
