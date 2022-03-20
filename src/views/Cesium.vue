@@ -541,7 +541,7 @@ export default {
             latitude: that.endLat,
             height: that.endHei,
           };
-          if (this.num) that.howRes(start, end); //调用this.howRes
+          that.howRes(start, end); //调用this.howRes
         });
     },
     howRes(start, end) {
