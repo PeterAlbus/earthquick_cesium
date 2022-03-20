@@ -235,15 +235,18 @@ export default {
       return result
     },
     getRealIndex:function (){
+      let that=this
       return function (index){
         let realIndex=0;
-        for(let i=0;i<this.earthquakeInfoList.length;i++)
+        let i=0;
+        for(let earthquake of that.earthquakeInfoList)
         {
-          if(this.earthquakeSearchResult[index].earthquakeId===this.earthquakeInfoList[i].earthquakeId)
+          if(that.earthquakeSearchResult[index].earthquakeId===earthquake.earthquakeId)
           {
             realIndex=i
             break
           }
+          i++
         }
         return realIndex
       }
