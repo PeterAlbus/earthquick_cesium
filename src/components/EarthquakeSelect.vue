@@ -40,6 +40,7 @@
               <el-button round type="success" @click="$emit('updateList')">显示全部</el-button>
             </div>
           </el-form>
+          <br/>
         </el-collapse-item>
       </el-collapse>
       <el-descriptions
@@ -49,8 +50,8 @@
           border
       >
         <template #extra>
-          <el-button type="primary" size="small" v-if="index!==selectedEarthquakeIndex" v-on:click="$emit('changeSelect',index);earthquakeSelectVisible=false">选择</el-button>
-          <el-button type="info" size="small" v-if="selectedEarthquakeIndex===index">已选择</el-button>
+          <el-button type="primary" size="small" v-if="getRealIndex(index)!==selectedEarthquakeIndex" v-on:click="$emit('changeSelect',getRealIndex(index));earthquakeSelectVisible=false">选择</el-button>
+          <el-button type="info" size="small" v-if="selectedEarthquakeIndex===getRealIndex(index)">已选择</el-button>
           <el-button type="success" size="small" v-on:click="$emit('jumpTo',item.longitude,item.latitude,100000);earthquakeSelectVisible=false">跳转</el-button>
           <el-button type="danger" size="small" v-on:click="deleteEarthquake(item.earthquakeId)">删除</el-button>
         </template>
@@ -233,6 +234,20 @@ export default {
       }
       return result
     },
+    getRealIndex:function (){
+      return function (index){
+        let realIndex=0;
+        for(let i=0;i<this.earthquakeInfoList.length;i++)
+        {
+          if(this.earthquakeSearchResult[index].earthquakeId===this.earthquakeInfoList[i].earthquakeId)
+          {
+            realIndex=i
+            break
+          }
+        }
+        return realIndex
+      }
+    }
   }
 }
 </script>

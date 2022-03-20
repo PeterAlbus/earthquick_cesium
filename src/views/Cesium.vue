@@ -70,7 +70,7 @@
       <div style="margin-top: 20px">
         <el-button type="primary" icon="el-icon-magic-stick" size="small" @click="selectPositionRoad">选取救援点</el-button>
         <el-button type="primary" icon="el-icon-search" size="small" @click="getPositionRoad">开始路径规划</el-button>
-        <el-button type="danger" icon="el-icon-s-release" size="small" @click="stopPositionRoad">stop</el-button>
+        <el-button type="danger" icon="el-icon-s-release" size="small" @click="stopPositionRoad">关闭</el-button>
       </div>
     </el-popover>
 
@@ -154,6 +154,7 @@
       <!--        hyc：增加椭圆显示位置-->
       <vc-entity :position="[longTemp, latiTemp]" description="您所点击的位置所表示的区域">
         <vc-graphics-ellipse :semiMinorAxis="50.0" :semiMajorAxis="50.0" :material="[255, 0, 0, 125]"></vc-graphics-ellipse>
+        <vc-graphics-label text="起点" font="20px sans-serif" :pixelOffset="[0, 20]" fillColor="red"></vc-graphics-label>
       </vc-entity>
       <!--hyc:消防队位置-->
       <vc-datasource-custom
@@ -369,6 +370,7 @@ export default {
             this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude);
             this.heiTemp = cartographic.height;
             console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
+            this.num=0;
           }
           else
           {
@@ -494,6 +496,8 @@ export default {
     },
     stopPositionRoad(){
       this.num=0;
+      this.longTemp=0.0;
+      this.latiTemp=0.0;
       this.$message.error("结束路径规划,如想要开启路径规划功能，请重新选点");
       this.visibleRoad=!this.visibleRoad;
     },
@@ -518,7 +522,8 @@ export default {
         that.$message.error("您还没有选取点，请点击屏幕进行选点");
         return;
       }
-      that.$message.success("开始路径规划！起点：经度："+this.startLon +"纬度："+this.startLat+"高度："+this.startHei);
+      that.$message.success("开始路径规划！");
+      //起点：经度："+this.startLon +"纬度："+this.startLat+"高度："+this.startHei
       let start = {
         lng: this.startLon,
         lat: this.startLat,
