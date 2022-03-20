@@ -510,11 +510,10 @@ export default {
       let latitude = this.latiTemp;
       let height = this.heiTemp;
       let that = this;
-      if (that.num !== 0) {
+      if (longitude!=0) {
         that.startLon = longitude;
         that.startLat = latitude;
         that.startHei = height;
-        that.num += 1;
       }
       else {
         that.$message.error("您还没有选取点，请点击屏幕进行选点");
