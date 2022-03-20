@@ -323,7 +323,6 @@ export default {
     updateEarthquakeList(list){
       this.earthquakeInfoList=list
       this.getHospitals();
-      this.getFireCenters();
     },
     //get earthquake list
     getEarthquakeList(){
@@ -340,7 +339,6 @@ export default {
     selectEarthquakeIndex(index){
       this.selectedEarthquakeIndex=index;
       this.getHospitals();
-      this.getFireCenters();
     },
     //change location
     cameraTo(lat,lon,height){
