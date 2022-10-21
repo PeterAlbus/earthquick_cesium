@@ -330,9 +330,9 @@ export default {
       that.$axios.get("earthquakeInfo/getAllEarthquake")
           .then(res=>{
             that.earthquakeInfoList=res.data;
-            that.selectedEarthquakeIndex=0;
+            that.selectedEarthquakeIndex=4;
             that.getHospitals();
-            that.getFireCenters();
+            // that.getFireCenters();
           })
     },
     //change selected earthquake by index
@@ -367,7 +367,7 @@ export default {
             this.longTemp = Cesium.Math.toDegrees(cartographic.longitude);
             this.latiTemp = Cesium.Math.toDegrees(cartographic.latitude);
             this.heiTemp = cartographic.height;
-            console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
+            // console.log('经纬度',this.longTemp,this.latiTemp,this.heiTemp)
             this.num=0;
           }
           else
