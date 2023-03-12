@@ -1,6 +1,6 @@
 export default {
     SwitchLanguage: {
-        another: '中文'
+        another: '切换中文'
     },
     Cesium: {
         detail:'Detail',
@@ -21,8 +21,8 @@ export default {
         car:'Car',
         walk:'Walk',
         bike:'Bike',
-        selectPos:'Select Rescue Point',
-        startPlan:'Start Path Planning',
+        selectPos:'Select Point',
+        startPlan:'Start',
         stopPlan:'Close',
         initTip:'The first time loading may be slow, please wait patiently',
         outIntensity:'Outermost Intensity',
@@ -93,7 +93,7 @@ export default {
         enterName: 'Enter Earthquake Name',
         filtering: 'Filtering',
         range: 'Range',
-        to: 'To',
+        to: '-',
         startDate: 'Start Date',
         endDate: 'End Date',
         area: 'Restrict Area',

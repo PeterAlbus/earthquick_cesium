@@ -1,6 +1,6 @@
 export default {
     SwitchLanguage: {
-        another: 'English'
+        another: 'Use English'
     },
     Cesium: {
         detail:'详情',
