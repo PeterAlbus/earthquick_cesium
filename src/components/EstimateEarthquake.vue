@@ -1,10 +1,10 @@
 <template>
   <el-button type="danger" @click="getEarthquakeSituation" round style="margin: 5px" icon="el-icon-document"
              :loading="analyzing"
-  >评估地震情况</el-button>
+  >{{ $t('EstimateEarthquake.estimate') }}</el-button>
   <el-dialog
       v-model="dialogVisible"
-      title="地震灾情快速评估"
+      :title="$t('EstimateEarthquake.quickAnalyze')"
       width="60vw"
       center
   >
@@ -16,35 +16,35 @@
       <el-descriptions-item>
         <template #label>
           <i class="el-icon-user"></i>
-          地震名称
+          {{ $t('EstimateEarthquake.name') }}
         </template>
         {{ earthquake.earthquakeName }}
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <i class="el-icon-s-data"></i>
-          震级
+          {{ $t('EstimateEarthquake.level') }}
         </template>
         {{earthquake.magnitude}}
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <i class="el-icon-location-outline"></i>
-          震源经纬度
+          {{ $t('EstimateEarthquake.lonlat') }}
         </template>
         ({{ earthquake.longitude }},{{earthquake.latitude}})
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <i class="el-icon-tickets"></i>
-          最高烈度
+          {{ $t('EstimateEarthquake.highIntensity') }}
         </template>
         {{earthquake.highIntensity}}
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <i class="el-icon-office-building"></i>
-          地震发生时间
+          {{ $t('EstimateEarthquake.time') }}
         </template>
         {{ earthquake.earthquakeTime }}
       </el-descriptions-item>
@@ -53,7 +53,7 @@
     <el-collapse>
       <el-collapse-item name="1">
         <template #title>
-          估算的人口密度：&nbsp{{estimate.population}}人/km²（计算结果仅供参考)
+          {{ $t('EstimateEarthquake.population') }}&nbsp{{estimate.population}}{{ $t('EstimateEarthquake.referenceOnly') }}
         </template>
       <div>
             我们以建筑物损坏率为主要参数，选择指数函数作为地震人员伤亡的基本模型。测定结果如下公式所示。
@@ -76,13 +76,13 @@
     <div style="height: 32.5vh">
       <div style="float: left;">
         <div :style="{'--color': ecoColor}" style="float: left" class="circle"/>
-        <p style="font-size: large" >&nbsp;预估经济损失:{{ estimate.predictEconomy }}亿元</p>
+        <p style="font-size: large" >&nbsp;{{ $t('EstimateEarthquake.economy') }}{{ estimate.predictEconomy }} {{ $t('EstimateEarthquake.unitYuan') }}</p>
         <br/>
         <el-image :src="require('../assets/predictdeath.png')"></el-image>
       </div>
       <div style="float: right;">
         <div :style="{'--color': deathColor}" style="float:left;" class="circle"/>
-        <p style="font-size: large">&nbsp;预估死亡人数:{{ estimate.predictDeath }}人</p>
+        <p style="font-size: large">&nbsp;{{ $t('EstimateEarthquake.death') }}{{ estimate.predictDeath }}{{ $t('EstimateEarthquake.unitPerson') }}</p>
         <br/>
         <el-image :src="require('../assets/predictdeath.png')"></el-image>
       </div>
@@ -162,7 +162,7 @@ export default {
           })
           .catch(err=>{
             that.analyzing=false
-            this.$message.warning("暂时不支持该地区的灾情分析！")
+            this.$message.warning(this.$t('EstimateEarthquake.error'))
           })
     },
   }

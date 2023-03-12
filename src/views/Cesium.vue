@@ -1,40 +1,41 @@
 <template>
-  <DetailBox :info="detailInfo" title="详情"
+  <DetailBox :info="detailInfo" :title="$t('Cesium.detail')"
              @onClickButton="selectEarthquakeIndex(detailBox.quickEarthquakeIndex)"
              @onClose="detailBox.showDetail=false"
              :showBox="detailBox.showDetail"
              :showButton="detailBox.showButton"></DetailBox>
   <el-row class="toolbar">
-    <el-select v-model="imageryConfig.mapStyle" placeholder="请选择" class="toolbar-item">
+    <el-select v-model="imageryConfig.mapStyle" :placeholder="$t('Cesium.select')" class="toolbar-item">
       <el-option v-for="item in imageryConfig.options" :key="item.value" :label="item.label" :value="item.value"> </el-option>
     </el-select>
     <el-popover ref="controlVisible" placement="bottom" trigger="click" v-model:visible="layerControl.visible" width="170px">
       <template #reference>
-        <el-button type="default" icon="el-icon-menu" round class="toolbar-item">图层控制</el-button>
+        <el-button type="default" icon="el-icon-menu" round class="toolbar-item">{{ $t('Cesium.layerControl') }}</el-button>
       </template>
-      <el-checkbox v-model="layerControl.showIntensity" label="烈度图"></el-checkbox><br/>
-      <el-checkbox v-model="layerControl.showEpicenter" label="震源"></el-checkbox>
-      <el-checkbox v-model="layerControl.showHospital" label="显示医院"></el-checkbox>
+      <el-checkbox v-model="layerControl.showIntensity" :label="$t('Cesium.intensityMap')"></el-checkbox><br/>
+      <el-checkbox v-model="layerControl.showEpicenter" :label="$t('Cesium.epicenter')"></el-checkbox>
+      <el-checkbox v-model="layerControl.showHospital" :label="$t('Cesium.hospital')"></el-checkbox>
       <el-tooltip placement="right" effect="light">
         <template #content>
-          默认的物资总量为1000个
+          {{ $t('Cesium.materialTip') }}
         </template>
-        <el-checkbox v-model="layerControl.showFireCenter" label="显示救援物资分配"></el-checkbox>
+        <el-checkbox v-model="layerControl.showFireCenter" :label="$t('Cesium.material')"></el-checkbox>
       </el-tooltip>
-      <el-collapse v-model="activeCalculateWeight" @change="handleChangeWeight" v-loading="fireCenterLoading" element-loading-text="正在进行物资分配计算">
-        <el-collapse-item title="展开" name="1">
-          设置物资分配总量:
+      <el-collapse v-model="activeCalculateWeight" @change="handleChangeWeight" v-loading="fireCenterLoading" :element-loading-text="$t('Cesium.materialCal')">
+        <el-collapse-item :title="$t('Cesium.expand')" name="1">
+          {{ $t('Cesium.materialNum') }}
           <el-input-number v-model="DistributionSum" :step="100" size="small" style="margin-top: 10px;"/>
-          设置物资分配地区数量:
+          {{ $t('Cesium.materialArea') }}
           <el-input-number v-model="DistrictSum" :step="5" size="small" style="margin-top: 10px;" :min="5" :max="30"/>
-          <el-button type="primary" icon="el-icon-success" size="small" @click="reGetCalculateWeight" style="margin-top: 10px;margin-left: 60px">计算</el-button>
+          <el-button type="primary" icon="el-icon-success" size="small" @click="reGetCalculateWeight" style="margin-top: 10px;margin-left: 60px">
+            {{ $t('Cesium.cal') }}</el-button>
         </el-collapse-item>
       </el-collapse>
     </el-popover>
     <el-button type="primary" round
                v-on:click="cameraTo(earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,100000)"
                icon="el-icon-s-flag"
-               class="toolbar-item">跳转到所选震区</el-button>
+               class="toolbar-item">{{ $t('Cesium.jump') }}</el-button>
     <EarthquakeSelect
         :earthquakeInfoList="earthquakeInfoList"
         :selectedEarthquakeIndex="selectedEarthquakeIndex"
@@ -59,23 +60,23 @@
     >
       <template #reference>
         <el-button @click="visibleRoad = !visibleRoad" class="toolbar-item" round>
-          救援路径规划
+          {{ $t('Cesium.pathPlan') }}
         </el-button>
       </template>
       <div>
-        <el-radio v-model="radioRoad" label="1" size="small" border>驾车</el-radio>
-        <el-radio v-model="radioRoad" label="2" size="small" border>步行</el-radio>
-        <el-radio v-model="radioRoad" label="3" size="small" border>电动车</el-radio>
+        <el-radio v-model="radioRoad" label="1" size="small" border>{{ $t('Cesium.car') }}</el-radio>
+        <el-radio v-model="radioRoad" label="2" size="small" border>{{ $t('Cesium.walk') }}</el-radio>
+        <el-radio v-model="radioRoad" label="3" size="small" border>{{ $t('Cesium.bike') }}</el-radio>
       </div>
       <div style="margin-top: 20px">
-        <el-button type="primary" icon="el-icon-magic-stick" size="small" @click="selectPositionRoad">选取救援点</el-button>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="getPositionRoad">开始路径规划</el-button>
-        <el-button type="danger" icon="el-icon-s-release" size="small" @click="stopPositionRoad">关闭</el-button>
+        <el-button type="primary" icon="el-icon-magic-stick" size="small" @click="selectPositionRoad">{{ $t('Cesium.selectPos') }}</el-button>
+        <el-button type="primary" icon="el-icon-search" size="small" @click="getPositionRoad">{{ $t('Cesium.startPlan') }}</el-button>
+        <el-button type="danger" icon="el-icon-s-release" size="small" @click="stopPositionRoad">{{ $t('Cesium.stopPlan') }}</el-button>
       </div>
     </el-popover>
-
+    <SwitchLanguage></SwitchLanguage>
   </el-row>
-  <el-row ref="viewerContainer" class="viewer" v-loading="cesiumLoading" element-loading-text="初次加载可能稍慢，请耐心等待">
+  <el-row ref="viewerContainer" class="viewer" v-loading="cesiumLoading" :element-loading-text="$t('Cesium.initTip')">
     <vc-viewer
         ref="vcViewer"
         :animation="viewerConfig.animation"
@@ -113,7 +114,7 @@
       <vc-datasource-custom name="intensity" :show="layerControl.showIntensity">
         <vc-entity
             :position="[earthquakeInfoList[selectedEarthquakeIndex].longitude,earthquakeInfoList[selectedEarthquakeIndex].latitude,0]"
-            :description="'最外圈烈度:'+item.intensity"
+            :description="$t('Cesium.outIntensity')+item.intensity"
             :id="'intensity_'+index"
             v-for="(item,index) in earthquakeInfoList[selectedEarthquakeIndex].intensityLineList"
         >
@@ -128,10 +129,10 @@
       </vc-datasource-custom>
 <!--      <vc-terrain-provider-tianditu token="fd7029d3dff756b437af91d68aadc6bf"></vc-terrain-provider-tianditu>-->
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="20">
-        <vc-imagery-provider-tianditu mapStyle="cva_w" token="de232c2bf878c7a7928afde78e339913"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.textLayer" token="0fb49d6be7f3f4c2f8950e844add64e1"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-layer-imagery :alpha="imageryConfig.alpha" :brightness="imageryConfig.brightness" :contrast="imageryConfig.contrast" :sortOrder="10">
-        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="de232c2bf878c7a7928afde78e339913" ref="provider"></vc-imagery-provider-tianditu>
+        <vc-imagery-provider-tianditu :mapStyle="imageryConfig.mapStyle" token="0fb49d6be7f3f4c2f8950e844add64e1" ref="provider"></vc-imagery-provider-tianditu>
       </vc-layer-imagery>
       <vc-navigation :offset="navigationConfig.offset" :otherOpts="navigationConfig.otherOpts"></vc-navigation>
       <vc-ajax-bar></vc-ajax-bar>
@@ -152,9 +153,9 @@
       >
       </vc-datasource-custom>
       <!--        hyc：增加椭圆显示位置-->
-      <vc-entity :position="[longTemp, latiTemp]" description="您所点击的位置所表示的区域">
+      <vc-entity :position="[longTemp, latiTemp]" :description="$t('Cesium.posDesc')">
         <vc-graphics-ellipse :semiMinorAxis="50.0" :semiMajorAxis="50.0" :material="[255, 0, 0, 125]"></vc-graphics-ellipse>
-        <vc-graphics-label text="起点" font="20px sans-serif" :pixelOffset="[0, 20]" fillColor="red"></vc-graphics-label>
+        <vc-graphics-label :text="$t('Cesium.startPoint')" font="20px sans-serif" :pixelOffset="[0, 20]" fillColor="red"></vc-graphics-label>
       </vc-entity>
       <!--hyc:消防队位置-->
       <vc-datasource-custom
@@ -177,9 +178,11 @@ import EarthquakeSelect from "../components/EarthquakeSelect";
 import AddEarthquake from "../components/AddEarthquake";
 import EstimateEarthquake from "../components/EstimateEarthquake";
 import {cartesianToLnglat, gcj2wgs, lnglatArrToCartesianArr, wgs2gcj} from "../assets/coordinateConversion";
+import SwitchLanguage from "@/components/SwitchLanguage.vue";
 export default {
   name: "Cesium",
   components: {
+    SwitchLanguage,
     DetailBox,
     EarthquakeSelect,
     AddEarthquake,
@@ -230,7 +233,8 @@ export default {
       },
       //measure
       measurementFabOptions: {
-        direction: 'right'
+        direction: 'right',
+        modelValue: false
       },
       //viewer
       viewerConfig:{
@@ -248,15 +252,16 @@ export default {
         brightness:1,
         contrast:1,
         mapStyle:'img_w',
+        textLayer: {zh:'cva_w',en:'eva_w'}[localStorage.getItem('language')||'en'],
         options: [
-          {value: 'img_c', label: '全球影像地图服务(经纬度)'},
-          {value: 'img_w', label: '全球影像地图服务(墨卡托)'},
-          {value: 'vec_c', label: '全球矢量地图服务(经纬度)'},
-          {value: 'vec_w', label: '全球矢量地图服务(墨卡托)'},
-          {value: 'ter_c', label: '全球地形晕渲服务(经纬度)'},
-          {value: 'ter_w', label: '全球地形晕渲服务(墨卡托)'},
-          {value: 'ibo_c', label: '全球境界(经纬度)'},
-          {value: 'ibo_w', label: '全球境界(墨卡托)'}
+          {value: 'img_c', label: this.$t('Cesium.IMG_C')},
+          {value: 'img_w', label: this.$t('Cesium.IMG_W')},
+          {value: 'vec_c', label: this.$t('Cesium.VEC_C')},
+          {value: 'vec_w', label: this.$t('Cesium.VEC_W')},
+          {value: 'ter_c', label: this.$t('Cesium.TER_C')},
+          {value: 'ter_w', label: this.$t('Cesium.TER_W')},
+          {value: 'ibo_c', label: this.$t('Cesium.IBO_C')},
+          {value: 'ibo_w', label: this.$t('Cesium.IBO_W')}
         ],
       },
       //navigation
@@ -307,6 +312,8 @@ export default {
   mounted() {
     this.$refs.vcViewer.createPromise.then(({ Cesium, viewer }) => {
       viewer.scene.globe.depthTestAgainstTerrain = false;
+      // viewer.scene.screenSpaceCameraController.minimumZoomDistance = 10;
+      // viewer.scene.screenSpaceCameraController.maximumZoomDistance = 200000;
     });
   },
   methods: {
@@ -314,7 +321,7 @@ export default {
       console.log(val);
     },
     reGetCalculateWeight(){
-      this.$message.warning("请耐心等待，后台正在重新进行物资分配~")
+      this.$message.warning(this.$t('Cesium.calTip'))
       this.fireWeight=[];
       this.fireCenterBillboards=[];
       this.getFireCenters();
@@ -485,23 +492,23 @@ export default {
         }
         that.fireCenterLoading=false
         that.layerControl.visible=false
-        that.$message.success('物资分配计算完成')
+        that.$message.success(this.$t('Cesium.calSuc'))
       })
       .catch(()=>{
         that.fireCenterLoading=false
-        that.$message.error('物资分配计算失败')
+        that.$message.error(this.$t('Cesium.calFail'))
       });
     },
     stopPositionRoad(){
       this.num=0;
       this.longTemp=0.0;
       this.latiTemp=0.0;
-      this.$message.error("结束路径规划,如想要开启路径规划功能，请重新选点");
+      this.$message.error(this.$t('Cesium.planEnd'));
       this.visibleRoad=!this.visibleRoad;
     },
     selectPositionRoad(){
       this.num++;
-      this.$message.success("现在可以开始选取救援点啦~");
+      this.$message.success(this.$t('Cesium.planStart'));
     },
     getPositionRoad(viewer, event) {
       console.log("现在点击的坐标经纬度以及高度为:",this.longTemp,this.latiTemp,this.heiTemp,"以及现在num的值为",this.num)
@@ -516,10 +523,10 @@ export default {
         that.startHei = height;
       }
       else {
-        that.$message.error("您还没有选取点，请点击屏幕进行选点");
+        that.$message.error(this.$t('Cesium.planError'));
         return;
       }
-      that.$message.success("开始路径规划！");
+      that.$message.success(this.$t('Cesium.planing'));
       //起点：经度："+this.startLon +"纬度："+this.startLat+"高度："+this.startHei
       let start = {
         lng: this.startLon,
@@ -821,23 +828,23 @@ export default {
       {
         info=[
           {
-            key:'地震名称',
+            key:this.$t('Cesium.name'),
             value: this.earthquakeInfoList[this.detailBox.detailIndex].earthquakeName,
           },
           {
-            key:'震级',
+            key:this.$t('Cesium.level'),
             value: this.earthquakeInfoList[this.detailBox.detailIndex].magnitude,
           },
           {
-            key:'震源经纬度',
+            key:this.$t('Cesium.pos'),
             value: this.earthquakeInfoList[this.detailBox.detailIndex].longitude+','+this.earthquakeInfoList[this.detailBox.detailIndex].latitude,
           },
           {
-            key:'震中烈度',
+            key:this.$t('Cesium.intensity'),
             value: this.earthquakeInfoList[this.detailBox.detailIndex].highIntensity,
           },
           {
-            key:'发生时间',
+            key:this.$t('Cesium.time'),
             value: this.earthquakeInfoList[this.detailBox.detailIndex].earthquakeTime,
           },]
       }
@@ -845,23 +852,23 @@ export default {
       {
         info=[
           {
-            key:'医院名称',
+            key:this.$t('Cesium.hospitalName'),
             value: this.hospitalList[this.detailBox.detailIndex].name,
           },
           {
-            key:'地址',
+            key:this.$t('Cesium.address'),
             value: this.hospitalList[this.detailBox.detailIndex].address,
           },
           {
-            key:'经纬度',
+            key:this.$t('Cesium.hospitalPOS'),
             value: this.hospitalList[this.detailBox.detailIndex].lon+','+this.hospitalList[this.detailBox.detailIndex].lat,
           },
           {
-            key:'所在省市',
+            key:this.$t('Cesium.city'),
             value: this.hospitalList[this.detailBox.detailIndex].pname+this.hospitalList[this.detailBox.detailIndex].cityname,
           },
           {
-            key:'类型',
+            key:this.$t('Cesium.type'),
             value: this.hospitalList[this.detailBox.detailIndex].type,
           },]
       }
@@ -869,7 +876,7 @@ export default {
       {
         info=[
           {
-            key:'物资数量',
+            key:this.$t('Cesium.count'),
             value:this.detailBox.detailIndex,
           }]
       }
@@ -877,15 +884,15 @@ export default {
       {
         info=[
           {
-            key:'烈度',
-            value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].intensity+'(选中区域外圈等烈度线)',
+            key:this.$t('Cesium.intensity'),
+            value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].intensity+this.$t('Cesium.intensityDetail'),
           },
           {
-            key:'长轴半径',
+            key:this.$t('Cesium.longRadius'),
             value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].longRadius+'km',
           },
           {
-            key:'短轴半径',
+            key:this.$t('Cesium.shortRadius'),
             value:this.earthquakeInfoList[this.selectedEarthquakeIndex].intensityLineList[this.detailBox.detailIndex].shortRadius+'km',
           }
         ]
